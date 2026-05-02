@@ -2,8 +2,8 @@ import type { Metadata } from "next"
 import { Playfair_Display, Lato } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 
-import { AuthProvider } from "@/components/auth/auth-provider"
-import { ProjectsProvider } from "@/components/projects/projects-provider"
+import { AuthProvider } from "@/controller/auth-controller"
+import { ProjectsProvider } from "@/controller/projects-controller"
 import "leaflet/dist/leaflet.css"
 import "./globals.css"
 
@@ -61,3 +61,4 @@ export default function RootLayout({
     </html>
   )
 }
+
