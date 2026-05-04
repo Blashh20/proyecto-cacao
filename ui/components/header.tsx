@@ -25,7 +25,7 @@ export function Header() {
   const [isRegisterOpen, setIsRegisterOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 
-  const { user, isAuthenticated, login, logout, register } = useAuth()
+  const { user, isAuthenticated, login, loginWithProvider, logout, register } = useAuth()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -118,6 +118,13 @@ export function Header() {
                       <p className="text-sm font-medium text-foreground">{user.name}</p>
                       <p className="text-xs text-muted-foreground">{user.email}</p>
                     </div>
+                    <Link
+                      href="/perfil"
+                      className="flex items-center gap-2 px-4 py-3 text-sm text-foreground transition-colors hover:bg-forest/10"
+                    >
+                      <User size={16} className="text-forest" />
+                      Mi perfil
+                    </Link>
                     {user.role === "admin" && (
                       <Link
                         href="#admin"
@@ -196,6 +203,14 @@ export function Header() {
                       <p className="text-sm capitalize text-forest-light">{user.role}</p>
                     </div>
                   </div>
+                  <Link
+                    href="/perfil"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center justify-center gap-2 rounded-xl border border-forest/40 py-3 text-forest-light"
+                  >
+                    <User size={18} />
+                    Mi perfil
+                  </Link>
                   <button
                     onClick={() => {
                       logout()
@@ -241,11 +256,13 @@ export function Header() {
         onClose={() => setIsLoginOpen(false)}
         onSwitchToRegister={handleSwitchToRegister}
         onLogin={login}
+        onLoginWithProvider={loginWithProvider}
       />
       <RegisterModal
         isOpen={isRegisterOpen}
         onClose={() => setIsRegisterOpen(false)}
         onSwitchToLogin={handleSwitchToLogin}
+        onLoginWithProvider={loginWithProvider}
         onRegister={register}
       />
     </>

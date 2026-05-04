@@ -10,19 +10,9 @@ import { GallerySection } from "@/ui/components/gallery-section"
 import { ContactSection } from "@/ui/components/contact-section"
 import { Footer } from "@/ui/components/footer"
 import { AdminProjectsPanel } from "@/ui/components/admin-projects-panel"
-import { supabase } from "@/services/client"
+import { AdminProductsPanel } from "@/ui/components/admin-products-panel"
 
-export default async function Home() {
-  const { data, error } = await supabase
-    .from("usuarios")
-    .select("*")
-
-  if (error) {
-    console.error("Error:", error)
-  } else {
-    console.log("Usuarios:", data)
-  }
-
+export default function Home() {
   return (
     <main className="min-h-screen">
       <Header />
@@ -31,6 +21,7 @@ export default async function Home() {
       <ProcessSection />
       <ProjectsMapSection />
       <AdminProjectsPanel />
+      <AdminProductsPanel />
       <ProductsSection />
       <GallerySection />
       <ContactSection />

@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
-import type { User as SupabaseUser } from "@supabase/supabase-js"
+import type { Provider, User as SupabaseUser } from "@supabase/supabase-js"
 
 import { supabase } from "@/services/client"
 
@@ -35,6 +35,7 @@ interface AuthContextType {
   isAuthenticated: boolean
   isLoading: boolean
   login: (input: LoginInput) => Promise<void>
+  loginWithProvider: (provider: Provider) => Promise<void>
   logout: () => Promise<void>
   register: (input: RegisterInput) => Promise<void>
 }
@@ -212,6 +213,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const loginWithProvider = async (provider: Provider) => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
+      },
+    })
+
+    if (error) {
+      throw new Error(`No se pudo iniciar sesion con ${provider}`)
+    }
+  }
+
   const register = async ({
     tipo_identificacion,
     numero_identificacion,
@@ -285,6 +299,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: !!user,
       isLoading,
       login,
+      loginWithProvider,
       logout,
       register,
     }),
@@ -305,4 +320,3 @@ export function useAuth() {
   }
   return context
 }
-

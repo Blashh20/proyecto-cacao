@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { Provider } from "@supabase/supabase-js";
 import { Check, Eye, EyeOff, UserPlus, X } from "lucide-react";
 
 import { cn } from "@/ui/utils";
@@ -9,6 +10,7 @@ interface RegisterModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSwitchToLogin: () => void;
+  onLoginWithProvider: (provider: Provider) => Promise<void>;
   onRegister: (input: {
     tipo_identificacion: string;
     numero_identificacion: string;
@@ -26,6 +28,7 @@ export function RegisterModal({
   isOpen,
   onClose,
   onSwitchToLogin,
+  onLoginWithProvider,
   onRegister,
 }: RegisterModalProps) {
   const [formData, setFormData] = useState({
@@ -109,6 +112,22 @@ export function RegisterModal({
     }
   };
 
+  const handleSocialRegister = async (provider: Provider) => {
+    setError("");
+    setIsLoading(true);
+
+    try {
+      await onLoginWithProvider(provider);
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "No se pudo continuar con proveedor externo";
+      setError(message);
+      setIsLoading(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -144,6 +163,26 @@ export function RegisterModal({
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleSocialRegister("google")}
+                    disabled={isLoading}
+                    className="inline-flex items-center justify-center gap-3 rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium text-foreground transition hover:border-forest/50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <GoogleIcon />
+                    Registrarse con Google
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="h-px flex-1 bg-border" />
+                  <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    o
+                  </span>
+                  <div className="h-px flex-1 bg-border" />
+                </div>
+
                 <div>
                   <label className="mb-2 block text-sm font-medium text-foreground">
                     Tipo de Identificacion
@@ -408,6 +447,17 @@ export function RegisterModal({
           </div>
         </div>
       </div>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
+      <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.5 3.9-5.5 3.9-3.3 0-6-2.7-6-6s2.7-6 6-6c1.9 0 3.2.8 3.9 1.5l2.7-2.6C16.9 3.3 14.7 2.4 12 2.4 6.7 2.4 2.4 6.7 2.4 12S6.7 21.6 12 21.6c6.9 0 9.1-4.8 9.1-7.3 0-.5 0-.9-.1-1.2H12z" />
+      <path fill="#34A853" d="M3.5 7.4l3.2 2.3C7.5 7.7 9.6 6 12 6c1.9 0 3.2.8 3.9 1.5l2.7-2.6C16.9 3.3 14.7 2.4 12 2.4c-3.7 0-7 2.1-8.5 5z" />
+      <path fill="#FBBC05" d="M12 21.6c2.6 0 4.8-.9 6.4-2.4l-3-2.4c-.8.6-1.9 1.1-3.4 1.1-3.9 0-5.3-2.6-5.5-3.9l-3.2 2.5c1.5 2.9 4.6 5.1 8.7 5.1z" />
+      <path fill="#4285F4" d="M21.1 12.3c0-.5 0-.9-.1-1.2H12v3.9h5.5c-.3 1.3-1.5 3.9-5.5 3.9-3.3 0-6-2.7-6-6 0-1 .2-1.9.7-2.7L3.5 7.4C2.8 8.8 2.4 10.4 2.4 12c0 5.3 4.3 9.6 9.6 9.6 6.9 0 9.1-4.8 9.1-9.3z" />
+    </svg>
   );
 }
 
