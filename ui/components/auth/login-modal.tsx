@@ -48,7 +48,7 @@ export function LoginModal({ isOpen, onClose, onSwitchToRegister, onLogin, onLog
 
   try {
     onClose() // 👈 CIERRA el modal antes de redirigir
-    await onLoginWithProvider(provider)
+    //await onLoginWithProvider(provider)
   } catch (err) {
     setError("Error con Google")
     setIsLoading(false)
