@@ -1,5 +1,4 @@
 "use client"
-
 import { useEffect, useState } from "react"
 import dynamic from "next/dynamic"
 import { Calendar, Leaf, MapPin, Mountain, TreePine, TrendingUp, Users, X } from "lucide-react"
@@ -7,6 +6,7 @@ import { Calendar, Leaf, MapPin, Mountain, TreePine, TrendingUp, Users, X } from
 import { useProjects } from "@/controller/projects-controller"
 import { cn } from "@/ui/utils"
 import type { Project, ProjectGalleryImage } from "@/model/projects"
+
 
 const ProjectsMapLeaflet = dynamic(() => import("@/ui/components/projects-map-leaflet").then((mod) => mod.ProjectsMapLeaflet), {
   ssr: false,
@@ -260,7 +260,6 @@ export function ProjectsMapSection() {
       </div>
 
       <style jsx global>{`
-        @import 'leaflet/dist/leaflet.css';
 
         .leaflet-container {
           font-family: inherit;
@@ -331,4 +330,3 @@ function getProjectGallery(project: Project): ProjectGalleryImage[] {
     },
   ]
 }
-

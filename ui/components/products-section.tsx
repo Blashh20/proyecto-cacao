@@ -7,11 +7,21 @@ import { ArrowRight, ShoppingBag, Star } from "lucide-react";
 import { cn } from "@/ui/utils";
 import { supabase } from "@/services/client";
 
+type ProductItem = {
+  id_producto: number;
+  nombre_derivado: string;
+  imagen_url: string;
+  tag: string;
+  rating: number;
+  descripcion: string;
+  precio?: number | null;
+};
+
 export function ProductsSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [hoveredProduct, setHoveredProduct] = useState<number | null>(null);
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<ProductItem[]>([]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -46,7 +56,7 @@ export function ProductsSection() {
       return [];
     }
 
-    return data ?? [];
+    return (data ?? []) as ProductItem[];
   };
 
   return (
@@ -166,7 +176,7 @@ export function ProductsSection() {
 
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-xl font-bold text-forest-light">
-                        {}
+                        {new Intl.NumberFormat("es-CO").format(product.precio ?? 0)}
                       </span>
                       <span className="text-xs uppercase tracking-wider text-cream/40">
                         COP
@@ -207,4 +217,3 @@ export function ProductsSection() {
     </section>
   );
 }
-

@@ -1,13 +1,42 @@
 "use client"
 
+import { useEffect } from "react"
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet"
 import L from "leaflet"
 import { Leaf, Users } from "lucide-react"
+import { useMap } from "react-leaflet/hooks"
 
 import type { Project } from "@/model/projects"
 
 const MAP_CENTER: [number, number] = [10.75, -73.75]
 const MAP_ZOOM = 9
+
+function MapSizeFixer() {
+  const map = useMap()
+
+  useEffect(() => {
+    let rafId: number | null = null
+
+    const refreshMapSize = () => {
+      if (rafId !== null) return
+      rafId = window.requestAnimationFrame(() => {
+        map.invalidateSize({ pan: false, animate: false })
+        rafId = null
+      })
+    }
+
+    const timeoutId = window.setTimeout(refreshMapSize, 0)
+    window.addEventListener("resize", refreshMapSize, { passive: true })
+
+    return () => {
+      window.clearTimeout(timeoutId)
+      if (rafId !== null) window.cancelAnimationFrame(rafId)
+      window.removeEventListener("resize", refreshMapSize)
+    }
+  }, [map])
+
+  return null
+}
 
 function createCustomIcon(isHovered: boolean) {
   return L.divIcon({
@@ -42,9 +71,10 @@ export function ProjectsMapLeaflet({
       center={MAP_CENTER}
       zoom={MAP_ZOOM}
       className="z-0 h-[500px] w-full rounded-2xl"
-      scrollWheelZoom
+      scrollWheelZoom={false}
       style={{ background: "#1a2e1a" }}
     >
+      <MapSizeFixer />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

@@ -1,6 +1,6 @@
-"use client"
+﻿"use client"
 
-import { useMemo, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react"
+import type { ReactNode } from "react"
 import {
   BarChart3,
   Factory,
@@ -13,38 +13,12 @@ import {
   TrendingUp,
 } from "lucide-react"
 
-import { useAuth } from "@/controller/auth-controller"
-import { useProjects } from "@/controller/projects-controller"
-
-interface FormState {
-  name: string
-  location: string
-  lat: string
-  lng: string
-  description: string
-  hectares: string
-  families: string
-  yearStarted: string
-  production: string
-  variety: string
-  image: string
-}
-
-type AdminSection = "resumen" | "proyectos" | "produccion" | "mercado"
-
-const initialFormState: FormState = {
-  name: "",
-  location: "",
-  lat: "",
-  lng: "",
-  description: "",
-  hectares: "",
-  families: "",
-  yearStarted: "",
-  production: "",
-  variety: "",
-  image: "/images/cacao-pods.jpg",
-}
+import {
+  calculateYield,
+  type AdminSection,
+  marketData,
+  useAdminProjectsPanelController,
+} from "@/controller/admin-projects-panel-controller"
 
 const inputClassName =
   "w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/20"
@@ -57,86 +31,22 @@ const adminSections: { id: AdminSection; label: string; icon: React.ComponentTyp
 ]
 
 export function AdminProjectsPanel() {
-  const { user } = useAuth()
-  const { projects, addProject } = useProjects()
-  const [form, setForm] = useState<FormState>(initialFormState)
-  const [message, setMessage] = useState("")
-  const [activeSection, setActiveSection] = useState<AdminSection>("resumen")
-
-  const metrics = useMemo(() => {
-    const totalProjects = projects.length
-    const totalFamilies = projects.reduce((sum, project) => sum + project.families, 0)
-    const totalHectares = projects.reduce((sum, project) => sum + project.hectares, 0)
-    const totalProduction = projects.reduce((sum, project) => sum + parseProduction(project.production), 0)
-    const avgProduction = totalProjects > 0 ? Math.round(totalProduction / totalProjects) : 0
-    const newestYear = projects.reduce((max, project) => Math.max(max, project.yearStarted), 0)
-
-    return {
-      totalProjects,
-      totalFamilies,
-      totalHectares,
-      totalProduction,
-      avgProduction,
-      newestYear,
-    }
-  }, [projects])
-
-  const marketData = useMemo(
-    () => [
-      {
-        title: "Mix comercial",
-        value: "48% exportacion",
-        description: "Mayor salida para cafe especial, cacao premium y derivados con valor agregado.",
-      },
-      {
-        title: "Canal con mayor crecimiento",
-        value: "Retail especializado",
-        description: "Tiendas gourmet y marcas bean-to-bar con crecimiento sostenido.",
-      },
-      {
-        title: "Oportunidad prioritaria",
-        value: "Cafe y cacao premium",
-        description: "Categorias de origen y trazabilidad con mejor margen comercial.",
-      },
-      {
-        title: "Riesgo comercial",
-        value: "Volatilidad de precios",
-        description: "Conviene monitorear costo logístico, clima y demanda internacional.",
-      },
-    ],
-    []
-  )
+  const {
+    user,
+    projects,
+    isLoading,
+    form,
+    message,
+    activeSection,
+    isSaving,
+    metrics,
+    setActiveSection,
+    handleChange,
+    handleSubmit,
+  } = useAdminProjectsPanelController()
 
   if (user?.role !== "admin") {
     return null
-  }
-
-  const handleChange =
-    (field: keyof FormState) =>
-    (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      setForm((current) => ({ ...current, [field]: event.target.value }))
-    }
-
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-
-    addProject({
-      name: form.name.trim(),
-      location: form.location.trim(),
-      lat: Number(form.lat),
-      lng: Number(form.lng),
-      description: form.description.trim(),
-      hectares: Number(form.hectares),
-      families: Number(form.families),
-      yearStarted: Number(form.yearStarted),
-      production: form.production.trim(),
-      variety: form.variety.trim(),
-      image: form.image.trim() || "/images/cacao-pods.jpg",
-    })
-
-    setForm(initialFormState)
-    setMessage("Proyecto agregado correctamente al mapa y a la lista.")
-    setActiveSection("proyectos")
   }
 
   return (
@@ -332,10 +242,11 @@ export function AdminProjectsPanel() {
 
                 <button
                   type="submit"
+                  disabled={isSaving || isLoading}
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-forest px-6 py-3 font-semibold text-white transition-colors hover:bg-forest-dark"
                 >
                   <PlusCircle size={18} />
-                  Guardar proyecto
+                  {isSaving ? "Guardando..." : "Guardar proyecto"}
                 </button>
               </form>
 
@@ -523,15 +434,5 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
       {children}
     </label>
   )
-}
-
-function parseProduction(value: string) {
-  const match = value.match(/\d+/)
-  return match ? Number(match[0]) : 0
-}
-
-function calculateYield(totalProduction: number, totalHectares: number) {
-  if (!totalHectares) return "0.00"
-  return (totalProduction / totalHectares).toFixed(2)
 }
 

@@ -2,76 +2,57 @@
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
 
-import { defaultProjects, type Project } from "@/model/projects"
-
-interface NewProjectInput {
-  name: string
-  location: string
-  lat: number
-  lng: number
-  description: string
-  hectares: number
-  families: number
-  yearStarted: number
-  production: string
-  variety: string
-  image: string
-}
+import { createProject, defaultProjects, fetchProjects, type NewProjectInput, type Project } from "@/model/projects"
 
 interface ProjectsContextType {
   projects: Project[]
-  addProject: (project: NewProjectInput) => void
+  isLoading: boolean
+  addProject: (project: NewProjectInput) => Promise<void>
 }
 
-const STORAGE_KEY = "cacaotera-projects"
 const ProjectsContext = createContext<ProjectsContextType | undefined>(undefined)
 
 export function ProjectsProvider({ children }: { children: ReactNode }) {
   const [projects, setProjects] = useState<Project[]>(defaultProjects)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const storedProjects = window.localStorage.getItem(STORAGE_KEY)
+    let isMounted = true
 
-    if (!storedProjects) return
-
-    try {
-      const parsedProjects = JSON.parse(storedProjects) as Project[]
-
-      if (Array.isArray(parsedProjects) && parsedProjects.length > 0) {
-        setProjects(parsedProjects)
+    const loadProjects = async () => {
+      try {
+        const data = await fetchProjects()
+        if (isMounted) {
+          setProjects(data)
+        }
+      } catch {
+        if (isMounted) {
+          setProjects(defaultProjects)
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
       }
-    } catch {
-      window.localStorage.removeItem(STORAGE_KEY)
+    }
+
+    void loadProjects()
+
+    return () => {
+      isMounted = false
     }
   }, [])
-
-  useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(projects))
-  }, [projects])
 
   const value = useMemo(
     () => ({
       projects,
-      addProject: (project: NewProjectInput) => {
-        setProjects((currentProjects) => [
-          ...currentProjects,
-          {
-            id: currentProjects.length === 0 ? 1 : Math.max(...currentProjects.map((item) => item.id)) + 1,
-            name: project.name,
-            location: project.location,
-            coordinates: { lat: project.lat, lng: project.lng },
-            description: project.description,
-            hectares: project.hectares,
-            families: project.families,
-            yearStarted: project.yearStarted,
-            production: project.production,
-            variety: project.variety,
-            image: project.image,
-          },
-        ])
+      isLoading,
+      addProject: async (project: NewProjectInput) => {
+        const createdProject = await createProject(project)
+        setProjects((currentProjects) => [...currentProjects, createdProject])
       },
     }),
-    [projects]
+    [isLoading, projects]
   )
 
   return <ProjectsContext.Provider value={value}>{children}</ProjectsContext.Provider>
