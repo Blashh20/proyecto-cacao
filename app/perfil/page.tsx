@@ -1,7 +1,7 @@
 "use client"
 
-import Link from "next/link"
-import { useEffect, useMemo, useState, type FormEvent } from "react"
+import NextLink from "next/link"
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react"
 import { ArrowLeft } from "lucide-react"
 
 import { useAuth } from "@/controller/auth-controller"
@@ -39,6 +39,20 @@ const tabs: { id: Tab; label: string }[] = [
   { id: "pagos", label: "Pagos" },
   { id: "seguridad", label: "Seguridad" },
 ]
+
+type Props = {
+  href: string;
+  className?: string;
+  children: ReactNode;
+};
+
+function Link({ href, className, children }: Props) {
+  return (
+    <NextLink href={href} className={className}>
+      {children}
+    </NextLink>
+  );
+}
 
 export default function PerfilPage() {
   const { user, isAuthenticated, isLoading } = useAuth()
@@ -317,24 +331,57 @@ async function getPaymentSettings(userId: string): Promise<(PaymentSettings & { 
     .select("metodo_preferido, titular_facturacion, documento_facturacion, metodos_json")
     .eq("usuario_id", userId)
     .maybeSingle<PaymentSettings & { metodos_json?: string | null }>()
+
   if (error) return null
   return data ?? null
 }
 
-function parsePaymentMethods(raw: unknown): PaymentMethodItem[] {
-  if (!raw || typeof raw !== "string") return []
+function parsePaymentMethods(raw: string | null | undefined): PaymentMethodItem[] {
+  if (!raw) return []
   try {
-    const parsed = JSON.parse(raw) as PaymentMethodItem[]
-    return Array.isArray(parsed) ? parsed : []
+    const parsed = JSON.parse(raw) as unknown
+    if (!Array.isArray(parsed)) return []
+
+    return parsed
+      .map((entry, index) => {
+        const item = entry as Partial<PaymentMethodItem>
+        const tipo = item.tipo
+        if (!tipo || !["credito", "debito", "nequi", "daviplata", "transferencia", "efectivo"].includes(tipo)) {
+          return null
+        }
+
+        return {
+          id: String(item.id ?? index + 1),
+          tipo,
+          alias: String(item.alias ?? "Metodo de pago"),
+          ultimos4: String(item.ultimos4 ?? ""),
+          principal: Boolean(item.principal),
+        } satisfies PaymentMethodItem
+      })
+      .filter((item): item is PaymentMethodItem => item !== null)
   } catch {
     return []
   }
 }
 
-async function upsertInUsuarioTables(payload: Record<string, unknown>) {
-  const first = await supabase.from("usuario").upsert(payload)
+async function upsertInUsuarioTables(payload: {
+  id: string
+  primer_nombre: string | null
+  segundo_nombre: string | null
+  primer_apellido: string | null
+  segundo_apellido: string | null
+  tipo_identificacion: string | null
+  numero_identificacion: string | null
+  telefono_celular: string | null
+  email: string
+  rol: string
+  foto_perfil_url: string | null
+}): Promise<{ ok: boolean }> {
+  const first = await supabase.from("usuario").upsert(payload, { onConflict: "id" })
   if (!first.error) return { ok: true }
-  const second = await supabase.from("Usuarios").upsert(payload)
+
+  const second = await supabase.from("Usuarios").upsert(payload, { onConflict: "id" })
   if (!second.error) return { ok: true }
+
   return { ok: false }
 }

@@ -43,8 +43,8 @@ export function LoginModal({ isOpen, onClose, onSwitchToRegister, onLogin, onLog
   }
 
   const handleSocialLogin = async (provider: Provider) => {
-  setError("")
-  setIsLoading(true)
+    setError("")
+    setIsLoading(true)
 
   try {
     onClose() // 👈 CIERRA el modal antes de redirigir

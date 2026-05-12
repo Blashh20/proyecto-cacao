@@ -1,11 +1,12 @@
 import type { Metadata } from "next"
 import { Playfair_Display, Lato } from "next/font/google"
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from "@vercel/analytics/react"
 
 import { AuthProvider } from "@/controller/auth-controller"
 import { ProjectsProvider } from "@/controller/projects-controller"
-import "leaflet/dist/leaflet.css"
+// @ts-expect-error CSS import is resolved by Next.js bundler
 import "./globals.css"
+import "leaflet/dist/leaflet.css"
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -61,4 +62,3 @@ export default function RootLayout({
     </html>
   )
 }
-

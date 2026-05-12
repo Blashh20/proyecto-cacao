@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
 
+<<<<<<< HEAD
 import { defaultProjects, type Project, type ProjectGalleryImage } from "@/model/projects"
 
 export interface NewProjectInput {
@@ -25,30 +26,50 @@ interface ProjectsContextType {
   addProject: (project: NewProjectInput) => void
   updateProject: (id: number, project: Partial<NewProjectInput>) => void
   deleteProject: (id: number) => void
+=======
+import { createProject, defaultProjects, fetchProjects, type NewProjectInput, type Project } from "@/model/projects"
+
+interface ProjectsContextType {
+  projects: Project[]
+  isLoading: boolean
+  addProject: (project: NewProjectInput) => Promise<void>
+>>>>>>> 51e2a1f611ac970753465c7b7ba2cc00fa78a492
 }
 
-const STORAGE_KEY = "cacaotera-projects"
 const ProjectsContext = createContext<ProjectsContextType | undefined>(undefined)
 
 export function ProjectsProvider({ children }: { children: ReactNode }) {
   const [projects, setProjects] = useState<Project[]>(defaultProjects)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const storedProjects = window.localStorage.getItem(STORAGE_KEY)
+    let isMounted = true
 
-    if (!storedProjects) return
-
-    try {
-      const parsedProjects = JSON.parse(storedProjects) as Project[]
-
-      if (Array.isArray(parsedProjects) && parsedProjects.length > 0) {
-        setProjects(parsedProjects)
+    const loadProjects = async () => {
+      try {
+        const data = await fetchProjects()
+        if (isMounted) {
+          setProjects(data)
+        }
+      } catch {
+        if (isMounted) {
+          setProjects(defaultProjects)
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
       }
-    } catch {
-      window.localStorage.removeItem(STORAGE_KEY)
+    }
+
+    void loadProjects()
+
+    return () => {
+      isMounted = false
     }
   }, [])
 
+<<<<<<< HEAD
   useEffect(() => {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(projects))
@@ -79,6 +100,15 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
             gallery: project.gallery || [],
           },
         ])
+=======
+  const value = useMemo(
+    () => ({
+      projects,
+      isLoading,
+      addProject: async (project: NewProjectInput) => {
+        const createdProject = await createProject(project)
+        setProjects((currentProjects) => [...currentProjects, createdProject])
+>>>>>>> 51e2a1f611ac970753465c7b7ba2cc00fa78a492
       },
       updateProject: (id: number, projectUpdate: Partial<NewProjectInput>) => {
         setProjects((currentProjects) =>
@@ -110,7 +140,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         setProjects((currentProjects) => currentProjects.filter((proj) => proj.id !== id))
       },
     }),
-    [projects]
+    [isLoading, projects]
   )
 
   return <ProjectsContext.Provider value={value}>{children}</ProjectsContext.Provider>

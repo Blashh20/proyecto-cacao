@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useMemo, useState, useEffect, type ChangeEvent, type FormEvent, type ReactNode } from "react"
 import dynamic from "next/dynamic"
@@ -302,8 +302,8 @@ export function AdminProjectsPanel() {
                     type="button"
                     onClick={() => setActiveSection(section.id)}
                     className={`inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-all ${isActive
-                        ? "bg-forest text-white shadow-lg shadow-forest/20"
-                        : "text-muted-foreground hover:bg-background hover:text-foreground"
+                      ? "bg-forest text-white shadow-lg shadow-forest/20"
+                      : "text-muted-foreground hover:bg-background hover:text-foreground"
                       }`}
                   >
                     <Icon size={17} />
@@ -467,7 +467,7 @@ export function AdminProjectsPanel() {
                         <input
                           type="file"
                           accept="image/*"
-                          onChange={(e) => handleImageUpload(e, (str) => setForm(c => ({...c, image: str})))}
+                          onChange={(e) => handleImageUpload(e, (str) => setForm(c => ({ ...c, image: str })))}
                           className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-forest/10 file:text-forest hover:file:bg-forest/20"
                         />
                         {form.image && form.image.startsWith("data:image") && <span className="text-xs text-forest">Imagen lista</span>}
@@ -723,15 +723,5 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
       {children}
     </label>
   )
-}
-
-function parseProduction(value: string) {
-  const match = value.match(/\d+/)
-  return match ? Number(match[0]) : 0
-}
-
-function calculateYield(totalProduction: number, totalHectares: number) {
-  if (!totalHectares) return "0.00"
-  return (totalProduction / totalHectares).toFixed(2)
 }
 
