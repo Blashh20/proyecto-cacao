@@ -6,7 +6,69 @@ import { useAuth } from "@/controller/auth-controller"
 import { type AdminMetricSet, type AdminSection, type FormState, initialFormState, marketData } from "@/model/admin-projects"
 import { useProjects } from "@/controller/projects-controller"
 
-function parseProduction(value: string) {
+export type AdminSection = "resumen" | "proyectos" | "produccion" | "mercado"
+
+export interface FormState {
+  name: string
+  location: string
+  lat: string
+  lng: string
+  description: string
+  hectares: string
+  families: string
+  yearStarted: string
+  production: string
+  variety: string
+  image: string
+}
+
+export interface AdminMetricSet {
+  totalProjects: number
+  totalFamilies: number
+  totalHectares: number
+  totalProduction: number
+  avgProduction: number
+  newestYear: number
+}
+
+export const initialFormState: FormState = {
+  name: "",
+  location: "",
+  lat: "",
+  lng: "",
+  description: "",
+  hectares: "",
+  families: "",
+  yearStarted: "",
+  production: "",
+  variety: "",
+  image: "/images/cacao-pods.jpg",
+}
+
+export const marketData = [
+  {
+    title: "Mix comercial",
+    value: "48% exportacion",
+    description: "Mayor salida para cafe especial, cacao premium y derivados con valor agregado.",
+  },
+  {
+    title: "Canal con mayor crecimiento",
+    value: "Retail especializado",
+    description: "Tiendas gourmet y marcas bean-to-bar con crecimiento sostenido.",
+  },
+  {
+    title: "Oportunidad prioritaria",
+    value: "Cafe y cacao premium",
+    description: "Categorias de origen y trazabilidad con mejor margen comercial.",
+  },
+  {
+    title: "Riesgo comercial",
+    value: "Volatilidad de precios",
+    description: "Conviene monitorear costo logistico, clima y demanda internacional.",
+  },
+]
+
+export function parseProduction(value: string) {
   const match = value.match(/\d+/)
   return match ? Number(match[0]) : 0
 }
@@ -18,7 +80,7 @@ export function calculateYield(totalProduction: number, totalHectares: number) {
 
 export function useAdminProjectsPanelController() {
   const { user } = useAuth()
-  const { projects, addProject, isLoading } = useProjects()
+  const { projects, addProject } = useProjects()
 
   const [form, setForm] = useState<FormState>(initialFormState)
   const [message, setMessage] = useState("")
@@ -86,7 +148,7 @@ export function useAdminProjectsPanelController() {
   return {
     user,
     projects,
-    isLoading,
+
     form,
     message,
     activeSection,
