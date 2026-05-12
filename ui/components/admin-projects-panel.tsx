@@ -1,6 +1,7 @@
 ﻿"use client"
 
 import { useMemo, useState, useEffect, type ChangeEvent, type FormEvent, type ReactNode } from "react"
+import { parseProduction, calculateYield } from "@/controller/admin-projects-panel-controller"
 import dynamic from "next/dynamic"
 import {
   BarChart3,

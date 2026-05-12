@@ -67,7 +67,7 @@ export const marketData = [
   },
 ]
 
-function parseProduction(value: string) {
+export function parseProduction(value: string) {
   const match = value.match(/\d+/)
   return match ? Number(match[0]) : 0
 }
@@ -79,7 +79,7 @@ export function calculateYield(totalProduction: number, totalHectares: number) {
 
 export function useAdminProjectsPanelController() {
   const { user } = useAuth()
-  const { projects, addProject, isLoading } = useProjects()
+  const { projects, addProject } = useProjects()
 
   const [form, setForm] = useState<FormState>(initialFormState)
   const [message, setMessage] = useState("")
@@ -147,7 +147,7 @@ export function useAdminProjectsPanelController() {
   return {
     user,
     projects,
-    isLoading,
+
     form,
     message,
     activeSection,
