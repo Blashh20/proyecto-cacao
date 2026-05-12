@@ -25,10 +25,8 @@ export function useAdminProductsPanelController() {
 
     const payload = {
       nombre_derivado: form.nombre_derivado.trim(),
-      descripcion: form.descripcion.trim(),
-      imagen_url: form.imagen_url.trim(),
-      tag: form.tag.trim(),
-      rating: Number(form.rating),
+      descripcion_tecnica: form.descripcion.trim() || null,
+      categoria: form.tag.trim() || null,
     }
 
     const { error } = await supabase.from("productos_derivados").insert(payload)
@@ -50,6 +48,10 @@ export function useAdminProductsPanelController() {
     isSaving,
     message,
     errorMessage,
+    setForm,
+    setMessage,
+    setErrorMessage,
+    setIsSaving,
     handleChange,
     handleSubmit,
   }

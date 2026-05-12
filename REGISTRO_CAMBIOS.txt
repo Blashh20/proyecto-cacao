@@ -119,3 +119,82 @@ Notas de compatibilidad:
 Validación:
 - npm run build: OK.
 ----------------------------------------------------------------
+[2026-05-12 13:57:01]
+Solicitud: Resolver Runtime TypeError [d] is not a function tras sincronización.
+Acciones realizadas:
+1) Se regrabaron archivos críticos en UTF-8 sin BOM para evitar módulos corruptos por codificación.
+   - ui/components/projects-map-section.tsx
+   - controller/projects-controller.tsx
+   - controller/projects-service.ts
+   - model/projects.ts
+   - controller/admin-projects-panel-controller.ts
+   - controller/tourim_controller.ts
+2) Se limpió caché de build eliminando .next.
+3) Se corrigió configuración de Next para fijar raíz de trazado de archivos y evitar resolución errónea a C:\Users\DELL.
+   - Archivo: next.config.mjs
+   - Cambio: outputFileTracingRoot apuntando al directorio del proyecto.
+Resultado:
+- Build exitoso y rutas restauradas (/, /dashboard, /perfil).
+- Se elimina causa de runtime por chunks/caché desincronizados y raíz de workspace incorrecta.
+----------------------------------------------------------------
+[2026-05-12 14:53:18]
+Solicitud: Analizar rápido el proyecto y adaptar módulos a JSON real de Supabase.
+Consultas realizadas a Supabase (confirmación de esquema real):
+- rpc detalle_completo_empresas_mapa -> devuelve [{ datos_empresa: { id_empresa, nombre, nit, estado, puntos_distribucion[], catalogo_productos[] } }]
+- rpc obtener_productos -> devuelve [{ id_producto, fecha_creacion, nombre_derivado, descripcion_tecnica, categoria, id_galeria_foto }]
+- rpc de turismo intentados (obtener_puntos_de_ruta, obtener_puntos_ruta, get_route_points, get_tourism_data) -> 404.
+Archivos adaptados:
+- model/projects.ts
+  * Se añadieron campos usados por UI (hectares, families, yearStarted, production, variety).
+  * Tipos de IDs de catálogo y puntos ajustados a string (UUID).
+- controller/projects-service.ts
+  * Adaptador tipado a datos_empresa real.
+  * Mapeo seguro con defaults para evitar undefined/NaN en UI.
+- model/products.ts
+  * id_producto ajustado a string (UUID) y campos reales añadidos.
+- controller/products-controller.ts
+  * Mapeo robusto de obtener_productos a ProductItem esperado por UI.
+- controller/admin-products-panel-controller.ts
+  * Insert adaptado a columnas reales: nombre_derivado, descripcion_tecnica, categoria.
+- ui/components/admin-products-panel.tsx
+  * Reescrito para usar el controller y evitar referencias rotas/variables no definidas.
+- ui/components/products-section.tsx
+  * Ajuste fallback de imagen a /images/logo.png.
+Validación:
+- npm run lint: 0 errores (quedan warnings no bloqueantes).
+- npm run build: OK.
+----------------------------------------------------------------
+[2026-05-12 15:45:36]
+Solicitud: Adaptar Proyectos a estructura backend directa de empresa JSON (sin asumir datos_empresa envolvente) y soportar puntos_distribucion null.
+Archivo modificado:
+- controller/projects-service.ts
+Cambios:
+- Reescritura del adaptador de proyectos con tipo EmpresaPayload real.
+- Soporte para ambos formatos de respuesta: [{datos_empresa: {...}}] y [{...}].
+- Corrección crítica: id_empresa UUID ya no se convierte con Number(); se transforma a entero estable por hash para evitar key=NaN.
+- Manejo seguro de puntos_distribucion null y defaults de ubicación/coordenadas.
+- Mapeo robusto de catalogo_productos y distributionPoints.
+Validación:
+- npm run build: OK.
+----------------------------------------------------------------
+[2026-05-12 15:57:38]
+Solicitud: Habilitar zoom en el mapa interactivo de proyectos.
+Archivo modificado:
+- ui/components/projects-map-leaflet.tsx
+Cambios:
+- scrollWheelZoom: false -> true
+- Se habilitaron interacciones de zoom: touchZoom, doubleClickZoom, boxZoom, keyboard.
+Resultado:
+- El usuario puede hacer zoom con rueda del mouse/trackpad, doble clic, gestos táctiles y teclado.
+----------------------------------------------------------------
+[2026-05-12 16:21:59]
+Solicitud: Conectar módulo de registro con auth-controller y resolver por nombre real de tabla.
+Archivo modificado:
+- controller/auth-controller.tsx
+Cambios:
+- getUsuarioProfile ahora intenta leer perfil en tablas candidatas: usuario, Usuarios, usuarios.
+- register() ahora intenta insertar perfil en cascada en: Usuarios, usuario, usuarios.
+- Si ninguna tabla funciona, devuelve error claro indicando revisar nombre de tabla o políticas RLS.
+Resultado:
+- El flujo de registro queda acoplado al auth-controller y robusto ante variación de nombre de tabla.
+----------------------------------------------------------------

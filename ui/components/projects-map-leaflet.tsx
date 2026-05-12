@@ -66,12 +66,17 @@ export function ProjectsMapLeaflet({
   onProjectClick: (project: Project) => void
   hoveredProject: number | null
 }) {
+  console.log(projects)
   return (
     <MapContainer
       center={MAP_CENTER}
       zoom={MAP_ZOOM}
       className="z-0 h-[500px] w-full rounded-2xl"
-      scrollWheelZoom={false}
+      scrollWheelZoom
+      touchZoom
+      doubleClickZoom
+      boxZoom
+      keyboard
       style={{ background: "#1a2e1a" }}
     >
       <MapSizeFixer />
@@ -114,5 +119,4 @@ export function ProjectsMapLeaflet({
     </MapContainer>
   )
 }
-
 

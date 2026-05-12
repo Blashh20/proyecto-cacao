@@ -10,7 +10,7 @@ import { cn } from "@/ui/utils";
 export function ProductsSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const [isVisible, setIsVisible] = useState(false);
-  const [hoveredProduct, setHoveredProduct] = useState<number | null>(null);
+  const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
   const { products } = useProducts();
 
   useEffect(() => {
@@ -26,6 +26,7 @@ export function ProductsSection() {
     if (sectionRef.current) {
       observer.observe(sectionRef.current);
     }
+    console.log(products);
 
     return () => observer.disconnect();
   }, []);
@@ -99,7 +100,7 @@ export function ProductsSection() {
                 <div className="overflow-hidden rounded-2xl border border-border bg-card transition-all duration-500 hover:border-forest/50">
                   <div className="relative aspect-square overflow-hidden">
                     <Image
-                      src={product.imagen_url || "/public/apple-icon.png"}
+                      src={product.imagen_url || "/images/cacao-beans.jpg"}
                       alt={product.nombre_derivado}
                       fill
                       className={cn(

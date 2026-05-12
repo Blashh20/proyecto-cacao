@@ -17,12 +17,13 @@ export type TouristRouteDto = {
   difficulty: string
   duration: string
   distanceKm: number
+  operator?: string
   points: RoutePointDto[]
 }
 
 type RawRoutePointRow = Record<string, unknown>
 
-const ROUTE_POINTS_RPCS = ["obtener_puntos_de_ruta", "obtener_puntos_ruta", "get_route_points", "get_tourism_data"]
+const ROUTE_POINTS_RPCS = ["obtener_rutas_turisticas_detalle", "obtener_puntos_de_ruta", "obtener_puntos_ruta", "get_route_points", "get_tourism_data"]
 
 const asString = (value: unknown, fallback = "") =>
   typeof value === "string" ? value : value == null ? fallback : String(value)
@@ -71,10 +72,98 @@ export async function getTourismRoutePoints(): Promise<TouristRouteDto[]> {
   }
 
   if (!rows) {
-    if (process.env.NODE_ENV !== "production") {
-      console.warn("No hay RPC disponible para puntos de ruta:", lastError)
+    // Fallback directo a tablas reales: rutas_turisticas + puntos_de_ruta (+ puntos_geograficos opcional)
+    const routesRes = await supabase
+      .from("rutas_turisticas")
+      .select("id_ruta, nombre_ruta, distancia_total, nivel_dificultad, tiempo_estimado")
+      .order("fecha_creacion", { ascending: true })
+
+    if (routesRes.error || !Array.isArray(routesRes.data)) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("No se pudieron consultar rutas_turisticas:", routesRes.error ?? lastError)
+      }
+      return []
     }
-    return []
+
+    const pointsRes = await supabase
+      .from("puntos_de_ruta")
+      .select("id_punto_ruta, id_ruta, id_punto_geografico, orden")
+      .order("orden", { ascending: true })
+
+    const geoRes = await supabase
+      .from("rutas_turisticas")
+      .select("id_punto, nombre_lugar, latitud, longitud, tipo_punto")
+
+    const geoMap = new Map<string, Record<string, unknown>>()
+    if (!geoRes.error && Array.isArray(geoRes.data)) {
+      for (const row of geoRes.data as Record<string, unknown>[]) {
+        const id = asString(row.id_punto)
+        if (id) geoMap.set(id, row)
+      }
+    }
+
+    const groupedPoints = new Map<string, RoutePointDto[]>()
+    if (!pointsRes.error && Array.isArray(pointsRes.data)) {
+      for (const p of pointsRes.data as Record<string, unknown>[]) {
+        const routeId = asString(p.id_ruta)
+        const geoId = asString(p.id_punto_geografico)
+        const geo = geoMap.get(geoId)
+        const routePoint: RoutePointDto = {
+          id: asString(p.id_punto_ruta) || `${routeId}-${asNumber(p.orden, 0)}`,
+          name: asString(geo?.nombre_lugar) || `Punto ${asNumber(p.orden, 0)}`,
+          latitude: asNumber(geo?.latitud, 0),
+          longitude: asNumber(geo?.longitud, 0),
+          type: asString(geo?.tipo_punto, "Punto"),
+          order: asNumber(p.orden, 0),
+        }
+        if (!groupedPoints.has(routeId)) groupedPoints.set(routeId, [])
+        groupedPoints.get(routeId)!.push(routePoint)
+      }
+    }
+
+    return (routesRes.data as Record<string, unknown>[]).map((r) => {
+      const routeId = asString(r.id_ruta)
+      const points = (groupedPoints.get(routeId) ?? []).sort((a, b) => a.order - b.order)
+      return {
+        id: routeId,
+        name: asString(r.nombre_ruta, "Ruta turística"),
+        difficulty: asString(r.nivel_dificultad, "MEDIA"),
+        duration: asString(r.tiempo_estimado, ""),
+        distanceKm: asNumber(r.distancia_total, 0),
+        points,
+      }
+    })
+  }
+
+  // Formato nuevo esperado:
+  // [{ id_ruta, nombre_ruta, distancia_km, dificultad, empresa_operadora, puntos:[...] }]
+  const nestedRoutes = rows as Array<Record<string, unknown>>
+  if (
+    nestedRoutes.length > 0 &&
+    Array.isArray(nestedRoutes[0]?.puntos) &&
+    (nestedRoutes[0]?.id_ruta || nestedRoutes[0]?.nombre_ruta)
+  ) {
+    return nestedRoutes.map((route) => {
+      const pointsRaw = Array.isArray(route.puntos) ? (route.puntos as Record<string, unknown>[]) : []
+      return {
+        id: asString(route.id_ruta),
+        name: asString(route.nombre_ruta, "Ruta turística"),
+        difficulty: asString(route.dificultad, "MEDIA"),
+        duration: asString(route.tiempo_estimado ?? route.duracion, ""),
+        distanceKm: asNumber(route.distancia_km ?? route.distancia_total, 0),
+        operator: asString(route.empresa_operadora, ""),
+        points: pointsRaw
+          .map((point) => ({
+            id: asString(point.id_punto, `${asString(route.id_ruta)}-${asNumber(point.orden_visita, 0)}`),
+            name: asString(point.nombre_lugar, "Punto de ruta"),
+            latitude: asNumber(point.latitud, 0),
+            longitude: asNumber(point.longitud, 0),
+            type: asString(point.tipo_punto, "Punto"),
+            order: asNumber(point.orden_visita, 0),
+          }))
+          .sort((a, b) => a.order - b.order),
+      }
+    })
   }
 
   const routesMap = new Map<string, TouristRouteDto>()
@@ -113,4 +202,3 @@ export async function getTourismRoutePoints(): Promise<TouristRouteDto[]> {
 
   return routes.filter((route) => route.points.length > 0)
 }
-

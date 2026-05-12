@@ -102,19 +102,21 @@ function buildNameFromUsuario(profile: UsuarioRow | null, fallbackName: string) 
 }
 
 async function getUsuarioProfile(id: string) {
-  const { data, error } = await supabase
-    .from("usuario")
-    .select(
-      "id, tipo_identificacion, numero_identificacion, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, email, telefono_celular, rol"
-    )
-    .eq("id", id)
-    .maybeSingle<UsuarioRow>()
+  const tables = ["usuario", "Usuarios", "usuarios"]
+  for (const table of tables) {
+    const { data, error } = await supabase
+      .from(table)
+      .select(
+        "id, tipo_identificacion, numero_identificacion, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, email, telefono_celular, rol"
+      )
+      .eq("id", id)
+      .maybeSingle<UsuarioRow>()
 
-  if (error) {
-    return null
+    if (!error && data) {
+      return data
+    }
   }
-
-  return data
+  return null
 }
 
 async function mapSupabaseUser(user: SupabaseUser): Promise<User> {
@@ -273,23 +275,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error("No se pudo crear el usuario en autenticacion")
     }
 
-    const { error: profileError } = await supabase
-      .from("Usuarios")
-      .insert({
-        id: createdUser.id,
-        tipo_identificacion: normalizedTipo || null,
-        numero_identificacion: normalizedNumero,
-        primer_nombre: normalizedPrimerNombre,
-        segundo_nombre: normalizedSegundoNombre || null,
-        primer_apellido: normalizedPrimerApellido,
-        segundo_apellido: normalizedSegundoApellido || null,
-        email: normalizedEmail,
-        telefono_celular: normalizedTelefono || null,
-        rol: "user",
-      })
+    const profilePayload = {
+      id: createdUser.id,
+      tipo_identificacion: normalizedTipo || null,
+      numero_identificacion: normalizedNumero,
+      primer_nombre: normalizedPrimerNombre,
+      segundo_nombre: normalizedSegundoNombre || null,
+      primer_apellido: normalizedPrimerApellido,
+      segundo_apellido: normalizedSegundoApellido || null,
+      email: normalizedEmail,
+      telefono_celular: normalizedTelefono || null,
+      rol: "user",
+    }
 
-    if (profileError) {
-      throw new Error(`Usuario auth creado, pero fallo insercion en tabla usuario: ${profileError.message}`)
+    const profileTables = ["Usuarios", "usuario", "usuarios"]
+    let lastProfileError: string | null = null
+    let inserted = false
+
+    for (const table of profileTables) {
+      const { error: profileError } = await supabase.from(table).insert(profilePayload)
+      if (!profileError) {
+        inserted = true
+        break
+      }
+      lastProfileError = `${table}: ${profileError.message}`
+    }
+
+    if (!inserted) {
+      throw new Error(
+        `Usuario auth creado, pero fallo inserción del perfil. Revisa nombre de tabla/permisos RLS. Último error: ${lastProfileError ?? "desconocido"}`
+      )
     }
   }
 

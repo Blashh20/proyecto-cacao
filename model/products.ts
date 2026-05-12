@@ -1,10 +1,14 @@
 export interface ProductItem {
-  id_producto: number
+  id_producto: string
   nombre_derivado: string
   imagen_url: string
   tag: string
   rating: number
   descripcion: string
+  categoria?: string
+  fecha_creacion?: string
+  id_galeria_foto?: string | null
+  descripcion_tecnica?: string | null
   precio?: number | null
 }
 

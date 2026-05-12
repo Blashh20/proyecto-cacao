@@ -72,8 +72,8 @@ export function TourismSection() {
             No hay rutas turisticas disponibles.
           </div>
         ) : (
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="space-y-3 lg:col-span-1">
+          <>
+            <div className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {routes.map((routeItem) => (
                 <button
                   key={routeItem.id}
@@ -82,21 +82,38 @@ export function TourismSection() {
                     setHoveredPointId(routeItem.points[0]?.id ?? "")
                   }}
                   className={cn(
-                    "w-full rounded-2xl border p-4 text-left transition-colors",
+                    "w-full rounded-2xl border bg-card p-5 text-left transition-all",
                     selectedRoute?.id === routeItem.id
-                      ? "border-forest bg-forest/10"
-                      : "border-border hover:border-forest/40"
+                      ? "border-forest bg-forest/10 shadow-md"
+                      : "border-border hover:border-forest/40 hover:-translate-y-0.5"
                   )}
                 >
-                  <h3 className="font-semibold text-foreground">{routeItem.name}</h3>
-
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {routeItem.duration}  {routeItem.distanceKm} km  dificultad{" "}
-                    {routeItem.difficulty.toLowerCase()}
+                  <h3 className="text-lg font-semibold text-foreground">{routeItem.name}</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {routeItem.duration || "Sin duración"} · {routeItem.distanceKm} km
                   </p>
+                  <div className="mt-3 flex items-center gap-2 text-xs">
+                    <span className="rounded-full bg-forest/10 px-2 py-1 text-forest">
+                      {routeItem.difficulty}
+                    </span>
+                    <span className="rounded-full bg-forest/10 px-2 py-1 text-forest">
+                      {routeItem.points.length} puntos
+                    </span>
+                  </div>
                 </button>
               ))}
             </div>
+
+            <div className="grid gap-6 lg:grid-cols-3">
+              <div className="space-y-3 lg:col-span-1">
+                {orderedPoints.map((point, index) => (
+                  <div key={point.id} className="rounded-xl border border-border bg-card p-3">
+                    <p className="text-xs uppercase tracking-wide text-forest">Punto {index + 1}</p>
+                    <p className="font-medium text-foreground">{point.name}</p>
+                    <p className="text-xs text-muted-foreground">{point.type}</p>
+                  </div>
+                ))}
+              </div>
 
             {selectedRoute && (
               <div className="rounded-3xl border border-border bg-card p-4 lg:col-span-2">
@@ -184,7 +201,8 @@ export function TourismSection() {
                 )}
               </div>
             )}
-          </div>
+            </div>
+          </>
         )}
       </div>
     </section>
