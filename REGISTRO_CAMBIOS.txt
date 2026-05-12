@@ -1,0 +1,121 @@
+﻿REGISTRO DETALLADO DE CAMBIOS
+Proyecto: Cacaotera Business
+Formato de registro:
+- Fecha/Hora
+- Solicitud
+- Archivos creados/modificados/eliminados
+- Comandos ejecutados
+- Resultado
+
+================================================================
+[2026-05-12 11:41:23]
+Solicitud: Crear bitácora TXT para registrar todos los cambios a partir de ahora.
+Archivos:
+- Creado/asegurado: REGISTRO_CAMBIOS.txt
+Comandos ejecutados:
+- Validación/creación del archivo de bitácora
+Resultado:
+- Bitácora habilitada correctamente.
+----------------------------------------------------------------
+[2026-05-12 11:56:47]
+Solicitud: Cambiar logos por la imagen public/images/logo.png.
+Archivos modificados:
+- app/layout.tsx
+- ui/components/header.tsx
+Cambios realizados:
+- Se corrigieron rutas de metadata de iconos para usar /images/logo.png (antes apuntaban a /public/images/logo.png).
+- Se cambió tipo de icono de image/svg+xml a image/png.
+- Se reemplazó el icono SVG del header por la imagen real /images/logo.png usando next/image.
+Comandos ejecutados:
+- Búsqueda de referencias de logo e imágenes.
+- Edición de archivos con apply_patch.
+Resultado:
+- Logo visual y metadatos de icono ahora usan public/images/logo.png.
+Observación:
+- No se encontró actualmente la carpeta paralela cacaotera-business-vite en el workspace para aplicar este cambio ahí.
+----------------------------------------------------------------
+[2026-05-12 12:58:21]
+Solicitud: Revisar módulo de Proyectos, identificar cambios recientes y corregir problemas.
+Archivos modificados:
+- controller/projects-controller.tsx
+- ui/components/admin-projects-panel.tsx
+Problemas detectados y resueltos:
+- STORAGE_KEY se usaba sin definición en ProjectsProvider (riesgo de error en runtime al guardar localStorage).
+- La interfaz del contexto no declaraba updateProject/deleteProject aunque se exponían en el provider.
+- addProject estaba tipado como Promise pero era síncrono y no persistía en backend.
+- El submit de proyectos no esperaba el guardado asíncrono.
+Cambios realizados:
+- Se agregó STORAGE_KEY = "cacaotera:projects".
+- Se agregaron updateProject y deleteProject al tipo ProjectsContextType.
+- addProject se convirtió en async: intenta guardar en Supabase con createProject; si falla, aplica fallback local y registra error.
+- handleSubmit en admin-projects-panel se hizo async y ahora espera await addProject(projectData).
+Resultado:
+- Flujo de creación de proyectos más consistente y sin referencias indefinidas en el provider.
+----------------------------------------------------------------
+[2026-05-12 13:10:22]
+Solicitud: Revisar proyecto tras sincronización de GitHub y resolver problemas.
+Archivos modificados:
+- controller/projects-controller.tsx
+- eslint.config.mjs
+Problemas resueltos:
+- Contexto de proyectos inconsistente: faltaba exponer isLoading en value.
+- Riesgo de pérdida de galería en fallback local al crear proyectos.
+- Falla de lint por archivo generado next-env.d.ts incluido en análisis.
+Cambios realizados:
+- Se incluyó isLoading en el objeto value del ProjectsProvider.
+- Se preserva gallery al crear proyecto en fallback local.
+- Se ajustó ignore de ESLint para excluir next-env.d.ts (archivo autogenerado por Next).
+Validación:
+- npm run build: OK.
+- npm run lint: sin errores (quedan warnings no bloqueantes).
+----------------------------------------------------------------
+[2026-05-12 13:26:11]
+Solicitud: Corregir warning de React "Each child in a list should have a unique key" en sección Proyectos.
+Archivos modificados:
+- ui/components/projects-map-section.tsx
+- ui/components/projects-map-leaflet.tsx
+- ui/components/admin-map-leaflet.tsx
+Cambios realizados:
+- En los map() de proyectos se agregó índice y key compuesta robusta:
+  ${project.id}---
+- Esto evita colisiones cuando existen ids repetidos tras sincronización o fallback local.
+Validación:
+- npm run build: OK.
+Resultado:
+- Eliminado el origen del warning de key duplicada en ProjectsMapSection y mapas Leaflet.
+----------------------------------------------------------------
+[2026-05-12 13:34:53]
+Solicitud: Corregir vista dañada/CSS no aplicado tras ajuste de keys en Proyectos.
+Archivos modificados:
+- controller/projects-controller.tsx
+- ui/components/projects-map-section.tsx
+- ui/components/projects-map-leaflet.tsx
+- ui/components/admin-map-leaflet.tsx
+Cambios realizados:
+- Se agregó normalización de IDs únicos en proyectos al cargar datos (ensureUniqueProjectIds) para evitar colisiones reales de key.
+- Se restauró el uso de key simple (key={project.id}) en listas/mapas, ahora respaldado por IDs únicos.
+Resultado:
+- Se elimina la causa raíz del warning de key duplicada sin afectar estilos/layout.
+Validación:
+- npm run build: OK.
+----------------------------------------------------------------
+[2026-05-12 13:43:31]
+Solicitud: Corregir errores tras cambio de backend en función detalle_completo_empresas_mapa() y errores de UI/runtime.
+Archivos modificados:
+- model/projects.ts
+- controller/projects-service.ts
+- controller/admin-projects-panel-controller.ts
+- controller/tourim_controller.ts
+Problemas corregidos:
+1) IDs NaN / keys duplicadas en ProjectsMapSection.
+   - Causa: el frontend seguía esperando esquema antiguo (id, nombre, ubicacion, etc.), pero el RPC ahora devuelve datos_empresa JSONB.
+   - Solución: adaptador robusto en mapRowToProject para leer datos_empresa, convertir id_empresa string/uuid a id numérico estable (hash), y asignar defaults seguros.
+2) Error runtime en parseProduction (Cannot read properties of undefined (reading 'match')).
+   - Solución: parseProduction ahora acepta string | null | undefined con fallback a cadena vacía.
+3) Error de turismo en consola por RPC no disponible.
+   - Solución: manejo silencioso/advertencia solo en desarrollo sin romper UI.
+Notas de compatibilidad:
+- Como tu función nueva no retorna lat/lng, se aplicó fallback de coordenadas con centro estable + offset por índice para poder renderizar el mapa sin fallar.
+Validación:
+- npm run build: OK.
+----------------------------------------------------------------
