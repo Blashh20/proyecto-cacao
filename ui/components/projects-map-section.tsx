@@ -330,3 +330,4 @@ function getProjectGallery(project: Project): ProjectGalleryImage[] {
     },
   ]
 }
+

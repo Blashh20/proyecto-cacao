@@ -1,4 +1,4 @@
-﻿import { supabase } from "@/services/client"
+import { supabase } from "@/services/client"
 
 export type RoutePointDto = {
   id: string
@@ -71,7 +71,9 @@ export async function getTourismRoutePoints(): Promise<TouristRouteDto[]> {
   }
 
   if (!rows) {
-    console.error("Error fetching route points:", lastError)
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("No hay RPC disponible para puntos de ruta:", lastError)
+    }
     return []
   }
 

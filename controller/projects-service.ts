@@ -6,13 +6,12 @@ import { supabase } from "@/services/client"
 
 export async function fetchProjects(): Promise<Project[]> {
   const { data, error } = await supabase.rpc("detalle_completo_empresas_mapa")
-  console.log(data)
 
   if (error) {
     throw new Error(error.message)
   }
 
-  return ((data ?? []) as SupabaseProjectRow[]).map((row) => mapRowToProject(row))
+  return ((data ?? []) as SupabaseProjectRow[]).map((row, index) => mapRowToProject(row, index))
 }
 
 export async function createProject(project: NewProjectInput): Promise<Project> {

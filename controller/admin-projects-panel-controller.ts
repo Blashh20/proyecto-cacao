@@ -68,8 +68,9 @@ export const marketData = [
   },
 ]
 
-export function parseProduction(value: string) {
-  const match = value.match(/\d+/)
+export function parseProduction(value?: string | null) {
+  const safeValue = value ?? ""
+  const match = safeValue.match(/\d+/)
   return match ? Number(match[0]) : 0
 }
 

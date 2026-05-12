@@ -9,7 +9,7 @@ const inputClassName =
   "w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/20"
 
 export function AdminProductsPanel() {
-  const { user, form, isSaving, message, errorMessage, handleChange, handleSubmit } = useAdminProductsPanelController()
+  const { user, form, isSaving, message, errorMessage } = useAdminProductsPanelController()
 
   if (user?.role !== "admin") {
     return null

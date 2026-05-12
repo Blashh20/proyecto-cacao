@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect } from "react"
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet"
@@ -114,4 +114,5 @@ export function ProjectsMapLeaflet({
     </MapContainer>
   )
 }
+
 

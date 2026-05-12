@@ -238,7 +238,7 @@ export function AdminProjectsPanel() {
     }))
   }
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     const projectData = {
@@ -260,7 +260,7 @@ export function AdminProjectsPanel() {
       updateProject(form.id, projectData)
       setMessage("Proyecto actualizado correctamente.")
     } else {
-      addProject(projectData)
+      await addProject(projectData)
       setMessage("Proyecto agregado correctamente al mapa y a la lista.")
     }
 

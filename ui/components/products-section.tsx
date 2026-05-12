@@ -99,7 +99,7 @@ export function ProductsSection() {
                 <div className="overflow-hidden rounded-2xl border border-border bg-card transition-all duration-500 hover:border-forest/50">
                   <div className="relative aspect-square overflow-hidden">
                     <Image
-                      src=""
+                      src={product.imagen_url || "/public/apple-icon.png"}
                       alt={product.nombre_derivado}
                       fill
                       className={cn(

@@ -9,10 +9,28 @@ interface ProjectsContextType {
   projects: Project[]
   isLoading: boolean
   addProject: (project: NewProjectInput) => Promise<void>
->>>>>>> 51e2a1f611ac970753465c7b7ba2cc00fa78a492
+  updateProject: (id: number, projectUpdate: Partial<NewProjectInput>) => void
+  deleteProject: (id: number) => void
 }
 
 const ProjectsContext = createContext<ProjectsContextType | undefined>(undefined)
+const STORAGE_KEY = "cacaotera:projects"
+
+function ensureUniqueProjectIds(input: Project[]): Project[] {
+  const used = new Set<number>()
+  let nextId = input.length === 0 ? 1 : Math.max(...input.map((p) => p.id)) + 1
+
+  return input.map((project) => {
+    if (!used.has(project.id)) {
+      used.add(project.id)
+      return project
+    }
+
+    const reassigned = { ...project, id: nextId++ }
+    used.add(reassigned.id)
+    return reassigned
+  })
+}
 
 export function ProjectsProvider({ children }: { children: ReactNode }) {
   const [projects, setProjects] = useState<Project[]>(defaultProjects)
@@ -25,11 +43,11 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
       try {
         const data = await fetchProjects()
         if (isMounted) {
-          setProjects(data)
+          setProjects(ensureUniqueProjectIds(data))
         }
       } catch {
         if (isMounted) {
-          setProjects(defaultProjects)
+          setProjects(ensureUniqueProjectIds(defaultProjects))
         }
       } finally {
         if (isMounted) {
@@ -45,7 +63,6 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-<<<<<<< HEAD
   useEffect(() => {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(projects))
@@ -58,33 +75,31 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       projects,
-      addProject: (project: NewProjectInput) => {
-        setProjects((currentProjects) => [
-          ...currentProjects,
-          {
-            id: currentProjects.length === 0 ? 1 : Math.max(...currentProjects.map((item) => item.id)) + 1,
-            name: project.name,
-            location: project.location,
-            coordinates: { lat: project.lat, lng: project.lng },
-            description: project.description,
-            hectares: project.hectares,
-            families: project.families,
-            yearStarted: project.yearStarted,
-            production: project.production,
-            variety: project.variety,
-            image: project.image,
-            gallery: project.gallery || [],
-          },
-        ])
-=======
-  const value = useMemo(
-    () => ({
-      projects,
       isLoading,
       addProject: async (project: NewProjectInput) => {
-        const createdProject = await createProject(project)
-        setProjects((currentProjects) => [...currentProjects, createdProject])
->>>>>>> 51e2a1f611ac970753465c7b7ba2cc00fa78a492
+        try {
+          const savedProject = await createProject(project)
+          setProjects((currentProjects) => [...currentProjects, savedProject])
+        } catch (error) {
+          console.error("No se pudo guardar el proyecto en Supabase. Se guardará solo en memoria local.", error)
+          setProjects((currentProjects) => [
+            ...currentProjects,
+            {
+              id: currentProjects.length === 0 ? 1 : Math.max(...currentProjects.map((item) => item.id)) + 1,
+              name: project.name,
+              location: project.location,
+              coordinates: { lat: project.lat, lng: project.lng },
+              description: project.description,
+              hectares: project.hectares,
+              families: project.families,
+              yearStarted: project.yearStarted,
+              production: project.production,
+              variety: project.variety,
+              image: project.image,
+              gallery: project.gallery || [],
+            },
+          ])
+        }
       },
       updateProject: (id: number, projectUpdate: Partial<NewProjectInput>) => {
         setProjects((currentProjects) =>
@@ -104,8 +119,7 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
                 yearStarted: projectUpdate.yearStarted ?? proj.yearStarted,
                 production: projectUpdate.production ?? proj.production,
                 variety: projectUpdate.variety ?? proj.variety,
-                image: projectUpdate.image ?? proj.image,
-                gallery: projectUpdate.gallery ?? proj.gallery,
+                image: projectUpdate.image ?? proj.image
               }
             }
             return proj
