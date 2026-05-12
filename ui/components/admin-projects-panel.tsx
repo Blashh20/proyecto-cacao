@@ -1,6 +1,7 @@
 "use client"
 
-import { useMemo, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react"
+import { useMemo, useState, useEffect, type ChangeEvent, type FormEvent, type ReactNode } from "react"
+import dynamic from "next/dynamic"
 import {
   BarChart3,
   Factory,
@@ -15,8 +16,14 @@ import {
 
 import { useAuth } from "@/controller/auth-controller"
 import { useProjects } from "@/controller/projects-controller"
+import type { Project, ProjectGalleryImage } from "@/model/projects"
+
+const AdminMapLeaflet = dynamic(() => import("@/ui/components/admin-map-leaflet").then((mod) => mod.AdminMapLeaflet), {
+  ssr: false,
+})
 
 interface FormState {
+  id: number | null
   name: string
   location: string
   lat: string
@@ -28,11 +35,13 @@ interface FormState {
   production: string
   variety: string
   image: string
+  gallery: ProjectGalleryImage[]
 }
 
 type AdminSection = "resumen" | "proyectos" | "produccion" | "mercado"
 
 const initialFormState: FormState = {
+  id: null,
   name: "",
   location: "",
   lat: "",
@@ -44,6 +53,7 @@ const initialFormState: FormState = {
   production: "",
   variety: "",
   image: "/images/cacao-pods.jpg",
+  gallery: [],
 }
 
 const inputClassName =
@@ -58,7 +68,7 @@ const adminSections: { id: AdminSection; label: string; icon: React.ComponentTyp
 
 export function AdminProjectsPanel() {
   const { user } = useAuth()
-  const { projects, addProject } = useProjects()
+  const { projects, addProject, updateProject, deleteProject } = useProjects()
   const [form, setForm] = useState<FormState>(initialFormState)
   const [message, setMessage] = useState("")
   const [activeSection, setActiveSection] = useState<AdminSection>("resumen")
@@ -113,14 +123,124 @@ export function AdminProjectsPanel() {
 
   const handleChange =
     (field: keyof FormState) =>
-    (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      setForm((current) => ({ ...current, [field]: event.target.value }))
+      (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        setForm((current) => ({ ...current, [field]: event.target.value }))
+      }
+
+  const handleMapClick = (lat: number, lng: number) => {
+    setForm((current) => ({
+      ...current,
+      lat: String(lat),
+      lng: String(lng),
+    }))
+  }
+
+  const handleProjectSelect = (project: Project) => {
+    setForm({
+      id: project.id,
+      name: project.name,
+      location: project.location,
+      lat: String(project.coordinates.lat),
+      lng: String(project.coordinates.lng),
+      description: project.description,
+      hectares: String(project.hectares),
+      families: String(project.families),
+      yearStarted: String(project.yearStarted),
+      production: project.production,
+      variety: project.variety,
+      image: project.image,
+      gallery: project.gallery || [],
+    })
+    document.getElementById("admin-form")?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  const handleDelete = () => {
+    if (form.id && window.confirm("¿Seguro que deseas eliminar este proyecto?")) {
+      deleteProject(form.id)
+      setForm(initialFormState)
+      setMessage("Proyecto eliminado correctamente.")
     }
+  }
+
+  const handleCancelEdit = () => {
+    setForm(initialFormState)
+    setMessage("")
+  }
+
+  const compressImage = (file: File, callback: (base64String: string) => void) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement("canvas")
+        let width = img.width
+        let height = img.height
+        const MAX_DIMENSION = 800
+
+        if (width > height) {
+          if (width > MAX_DIMENSION) {
+            height *= MAX_DIMENSION / width
+            width = MAX_DIMENSION
+          }
+        } else {
+          if (height > MAX_DIMENSION) {
+            width *= MAX_DIMENSION / height
+            height = MAX_DIMENSION
+          }
+        }
+
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext("2d")
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height)
+          // Comprimir a WebP con 70% de calidad para ahorrar espacio
+          callback(canvas.toDataURL("image/webp", 0.7))
+        } else {
+          callback(e.target?.result as string)
+        }
+      }
+      img.src = e.target?.result as string
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleImageUpload = (
+    event: ChangeEvent<HTMLInputElement>,
+    callback: (base64String: string) => void
+  ) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      compressImage(file, callback)
+    }
+  }
+
+  const addGalleryImage = () => {
+    setForm((current) => ({
+      ...current,
+      gallery: [...current.gallery, { src: "", alt: "", source: "", sourceUrl: "" }],
+    }))
+  }
+
+  const updateGalleryImage = (index: number, field: keyof ProjectGalleryImage, value: string) => {
+    setForm((current) => {
+      const newGallery = [...current.gallery]
+      newGallery[index] = { ...newGallery[index], [field]: value }
+      return { ...current, gallery: newGallery }
+    })
+  }
+
+  const removeGalleryImage = (index: number) => {
+    setForm((current) => ({
+      ...current,
+      gallery: current.gallery.filter((_, i) => i !== index),
+    }))
+  }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    addProject({
+    const projectData = {
       name: form.name.trim(),
       location: form.location.trim(),
       lat: Number(form.lat),
@@ -132,10 +252,18 @@ export function AdminProjectsPanel() {
       production: form.production.trim(),
       variety: form.variety.trim(),
       image: form.image.trim() || "/images/cacao-pods.jpg",
-    })
+      gallery: form.gallery,
+    }
+
+    if (form.id) {
+      updateProject(form.id, projectData)
+      setMessage("Proyecto actualizado correctamente.")
+    } else {
+      addProject(projectData)
+      setMessage("Proyecto agregado correctamente al mapa y a la lista.")
+    }
 
     setForm(initialFormState)
-    setMessage("Proyecto agregado correctamente al mapa y a la lista.")
     setActiveSection("proyectos")
   }
 
@@ -173,11 +301,10 @@ export function AdminProjectsPanel() {
                     key={section.id}
                     type="button"
                     onClick={() => setActiveSection(section.id)}
-                    className={`inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
-                      isActive
+                    className={`inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition-all ${isActive
                         ? "bg-forest text-white shadow-lg shadow-forest/20"
                         : "text-muted-foreground hover:bg-background hover:text-foreground"
-                    }`}
+                      }`}
                   >
                     <Icon size={17} />
                     {section.label}
@@ -273,100 +400,173 @@ export function AdminProjectsPanel() {
           ) : null}
 
           {activeSection === "proyectos" ? (
-            <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-              <form onSubmit={handleSubmit} className="space-y-6 rounded-3xl border border-border bg-card p-6 md:p-8">
-                <div className="flex items-center gap-3">
-                  <PlusCircle className="text-forest" size={24} />
-                  <div>
-                    <h3 className="text-xl font-semibold text-foreground">Agregar nuevo proyecto</h3>
-                    <p className="text-sm text-muted-foreground">Completa la informacion para mostrarlo en el mapa y en el panel.</p>
-                  </div>
+            <div className="space-y-8" id="admin-form">
+              <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-forest/5 to-forest/10 p-4">
+                <div className="absolute left-8 top-8 z-[100] rounded-lg border border-border bg-background/95 px-4 py-2 shadow-lg backdrop-blur-sm">
+                  <p className="text-sm font-medium text-foreground">Mapa interactivo de gestión</p>
+                  <p className="text-xs text-muted-foreground">Haz clic en el mapa para agregar punto o selecciona un pin para editar</p>
                 </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="Nombre del proyecto">
-                    <input value={form.name} onChange={handleChange("name")} required className={inputClassName} />
-                  </Field>
-                  <Field label="Ubicacion">
-                    <input value={form.location} onChange={handleChange("location")} required className={inputClassName} />
-                  </Field>
-                  <Field label="Latitud">
-                    <input type="number" step="0.0001" value={form.lat} onChange={handleChange("lat")} required className={inputClassName} />
-                  </Field>
-                  <Field label="Longitud">
-                    <input type="number" step="0.0001" value={form.lng} onChange={handleChange("lng")} required className={inputClassName} />
-                  </Field>
-                  <Field label="Hectareas">
-                    <input type="number" min="1" value={form.hectares} onChange={handleChange("hectares")} required className={inputClassName} />
-                  </Field>
-                  <Field label="Familias beneficiadas">
-                    <input type="number" min="1" value={form.families} onChange={handleChange("families")} required className={inputClassName} />
-                  </Field>
-                  <Field label="Ano de inicio">
-                    <input type="number" min="2000" max="2100" value={form.yearStarted} onChange={handleChange("yearStarted")} required className={inputClassName} />
-                  </Field>
-                  <Field label="Produccion">
-                    <input value={form.production} onChange={handleChange("production")} required className={inputClassName} placeholder="45 toneladas/ano" />
-                  </Field>
-                  <Field label="Variedad">
-                    <input value={form.variety} onChange={handleChange("variety")} required className={inputClassName} />
-                  </Field>
-                  <Field label="Ruta de imagen">
-                    <input value={form.image} onChange={handleChange("image")} className={inputClassName} placeholder="/images/cacao-pods.jpg" />
-                  </Field>
-                </div>
-
-                <Field label="Descripcion">
-                  <textarea
-                    value={form.description}
-                    onChange={handleChange("description")}
-                    required
-                    rows={5}
-                    className={`${inputClassName} resize-none`}
+                <div className="h-[400px] w-full relative z-0">
+                  <AdminMapLeaflet
+                    projects={projects}
+                    selectedProjectId={form.id}
+                    onProjectSelect={handleProjectSelect}
+                    onMapClick={handleMapClick}
+                    newPointCoordinates={form.lat && form.lng && !form.id ? { lat: Number(form.lat), lng: Number(form.lng) } : null}
                   />
-                </Field>
-
-                {message ? (
-                  <div className="rounded-2xl border border-forest/30 bg-forest/10 px-4 py-3 text-sm text-foreground">{message}</div>
-                ) : null}
-
-                <button
-                  type="submit"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-forest px-6 py-3 font-semibold text-white transition-colors hover:bg-forest-dark"
-                >
-                  <PlusCircle size={18} />
-                  Guardar proyecto
-                </button>
-              </form>
-
-              <DashboardCard
-                title="Listado reciente"
-                icon={<Sprout size={20} className="text-forest" />}
-                description="Revision rapida de los proyectos registrados."
-              >
-                <div className="space-y-4">
-                  {projects.slice().reverse().map((project) => (
-                    <article key={project.id} className="rounded-2xl border border-border bg-background p-4">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <h4 className="font-semibold text-foreground">{project.name}</h4>
-                          <p className="text-sm text-muted-foreground">{project.location}</p>
-                        </div>
-                        <span className="rounded-full bg-forest/10 px-3 py-1 text-xs font-semibold text-forest">
-                          {project.yearStarted}
-                        </span>
-                      </div>
-                      <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{project.description}</p>
-                      <div className="mt-4 flex flex-wrap gap-2 text-xs text-foreground">
-                        <span className="rounded-full bg-forest/10 px-3 py-1">{project.hectares} ha</span>
-                        <span className="rounded-full bg-forest/10 px-3 py-1">{project.families} familias</span>
-                        <span className="rounded-full bg-forest/10 px-3 py-1">{project.variety}</span>
-                        <span className="rounded-full bg-forest/10 px-3 py-1">{project.production}</span>
-                      </div>
-                    </article>
-                  ))}
                 </div>
-              </DashboardCard>
+              </div>
+
+              <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+                <form onSubmit={handleSubmit} className="space-y-6 rounded-3xl border border-border bg-card p-6 md:p-8">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <PlusCircle className="text-forest" size={24} />
+                      <div>
+                        <h3 className="text-xl font-semibold text-foreground">{form.id ? "Editar proyecto" : "Agregar nuevo proyecto"}</h3>
+                        <p className="text-sm text-muted-foreground">Completa la informacion para mostrarlo en el mapa y en el panel.</p>
+                      </div>
+                    </div>
+                    {form.id && (
+                      <button type="button" onClick={handleCancelEdit} className="text-sm font-medium text-muted-foreground hover:text-foreground">
+                        Cancelar edición
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field label="Nombre del proyecto">
+                      <input value={form.name} onChange={handleChange("name")} required className={inputClassName} />
+                    </Field>
+                    <Field label="Ubicacion">
+                      <input value={form.location} onChange={handleChange("location")} required className={inputClassName} />
+                    </Field>
+                    <Field label="Latitud">
+                      <input type="number" step="0.0001" value={form.lat} onChange={handleChange("lat")} required className={inputClassName} />
+                    </Field>
+                    <Field label="Longitud">
+                      <input type="number" step="0.0001" value={form.lng} onChange={handleChange("lng")} required className={inputClassName} />
+                    </Field>
+                    <Field label="Hectareas">
+                      <input type="number" min="1" value={form.hectares} onChange={handleChange("hectares")} required className={inputClassName} />
+                    </Field>
+                    <Field label="Familias beneficiadas">
+                      <input type="number" min="1" value={form.families} onChange={handleChange("families")} required className={inputClassName} />
+                    </Field>
+                    <Field label="Ano de inicio">
+                      <input type="number" min="2000" max="2100" value={form.yearStarted} onChange={handleChange("yearStarted")} required className={inputClassName} />
+                    </Field>
+                    <Field label="Produccion">
+                      <input value={form.production} onChange={handleChange("production")} required className={inputClassName} placeholder="45 toneladas/ano" />
+                    </Field>
+                    <Field label="Variedad">
+                      <input value={form.variety} onChange={handleChange("variety")} required className={inputClassName} />
+                    </Field>
+                    <Field label="Imagen Principal">
+                      <div className="flex gap-2 items-center h-[50px]">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(e, (str) => setForm(c => ({...c, image: str})))}
+                          className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-forest/10 file:text-forest hover:file:bg-forest/20"
+                        />
+                        {form.image && form.image.startsWith("data:image") && <span className="text-xs text-forest">Imagen lista</span>}
+                      </div>
+                    </Field>
+                  </div>
+
+                  <Field label="Descripcion">
+                    <textarea
+                      value={form.description}
+                      onChange={handleChange("description")}
+                      required
+                      rows={5}
+                      className={`${inputClassName} resize-none`}
+                    />
+                  </Field>
+
+                  {message ? (
+                    <div className="rounded-2xl border border-forest/30 bg-forest/10 px-4 py-3 text-sm text-foreground">{message}</div>
+                  ) : null}
+
+                  <div className="mt-8 border-t border-border pt-6">
+                    <div className="mb-4 flex items-center justify-between">
+                      <h4 className="font-semibold text-foreground">Imágenes de Galería</h4>
+                      <button type="button" onClick={addGalleryImage} className="text-sm font-medium text-forest hover:text-forest-dark">+ Añadir imagen</button>
+                    </div>
+                    {form.gallery.map((img, index) => (
+                      <div key={index} className="mb-4 rounded-xl border border-border bg-background p-4 relative">
+                        <button type="button" onClick={() => removeGalleryImage(index)} className="absolute right-3 top-3 text-xs font-semibold text-red-500 hover:text-red-700">Eliminar</button>
+                        <div className="grid gap-4 md:grid-cols-2 mt-4">
+                          <Field label="Imagen">
+                            <div className="flex flex-col gap-2">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleImageUpload(e, (str) => updateGalleryImage(index, "src", str))}
+                                className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-forest/10 file:text-forest hover:file:bg-forest/20"
+                              />
+                              {img.src && img.src.startsWith("data:image") && <img src={img.src} alt="Preview" className="h-12 w-full max-w-32 object-cover rounded" />}
+                            </div>
+                          </Field>
+                          <Field label="Texto Alternativo"><input value={img.alt} onChange={(e) => updateGalleryImage(index, "alt", e.target.value)} required className={inputClassName} /></Field>
+                          <Field label="Fuente (ej. Wikimedia)"><input value={img.source} onChange={(e) => updateGalleryImage(index, "source", e.target.value)} required className={inputClassName} /></Field>
+                          <Field label="URL de la fuente"><input value={img.sourceUrl} onChange={(e) => updateGalleryImage(index, "sourceUrl", e.target.value)} required className={inputClassName} /></Field>
+                        </div>
+                      </div>
+                    ))}
+                    {form.gallery.length === 0 && <p className="text-sm text-muted-foreground">No hay imágenes en la galería. Se usará la imagen principal por defecto.</p>}
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      type="submit"
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-forest px-6 py-3 font-semibold text-white transition-colors hover:bg-forest-dark"
+                    >
+                      <PlusCircle size={18} />
+                      {form.id ? "Actualizar proyecto" : "Guardar proyecto"}
+                    </button>
+                    {form.id && (
+                      <button
+                        type="button"
+                        onClick={handleDelete}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-500/10 text-red-500 px-6 py-3 font-semibold transition-colors hover:bg-red-500/20"
+                      >
+                        Eliminar proyecto
+                      </button>
+                    )}
+                  </div>
+                </form>
+
+                <DashboardCard
+                  title="Listado reciente"
+                  icon={<Sprout size={20} className="text-forest" />}
+                  description="Revision rapida de los proyectos registrados."
+                >
+                  <div className="space-y-4">
+                    {projects.slice().reverse().map((project) => (
+                      <article key={project.id} className="rounded-2xl border border-border bg-background p-4 cursor-pointer hover:border-forest/50 transition-colors" onClick={() => handleProjectSelect(project)}>
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <h4 className="font-semibold text-foreground">{project.name}</h4>
+                            <p className="text-sm text-muted-foreground">{project.location}</p>
+                          </div>
+                          <span className="rounded-full bg-forest/10 px-3 py-1 text-xs font-semibold text-forest">
+                            {project.yearStarted}
+                          </span>
+                        </div>
+                        <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{project.description}</p>
+                        <div className="mt-4 flex flex-wrap gap-2 text-xs text-foreground">
+                          <span className="rounded-full bg-forest/10 px-3 py-1">{project.hectares} ha</span>
+                          <span className="rounded-full bg-forest/10 px-3 py-1">{project.families} familias</span>
+                          <span className="rounded-full bg-forest/10 px-3 py-1">{project.variety}</span>
+                          <span className="rounded-full bg-forest/10 px-3 py-1">{project.production}</span>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </DashboardCard>
+              </div>
             </div>
           ) : null}
 

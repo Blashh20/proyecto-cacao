@@ -2,9 +2,10 @@
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
 
-import { defaultProjects, type Project } from "@/model/projects"
+import { defaultProjects, type Project, type ProjectGalleryImage } from "@/model/projects"
 
-interface NewProjectInput {
+export interface NewProjectInput {
+  id?: number
   name: string
   location: string
   lat: number
@@ -16,11 +17,14 @@ interface NewProjectInput {
   production: string
   variety: string
   image: string
+  gallery?: ProjectGalleryImage[]
 }
 
 interface ProjectsContextType {
   projects: Project[]
   addProject: (project: NewProjectInput) => void
+  updateProject: (id: number, project: Partial<NewProjectInput>) => void
+  deleteProject: (id: number) => void
 }
 
 const STORAGE_KEY = "cacaotera-projects"
@@ -46,7 +50,12 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(projects))
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(projects))
+    } catch (error) {
+      console.error("No se pudieron guardar los proyectos en localStorage:", error)
+      alert("Memoria llena: Las imágenes que intentaste subir son demasiado grandes para el almacenamiento local del navegador. Los cambios no se guardarán permanentemente. Intenta eliminar imágenes de otros proyectos.")
+    }
   }, [projects])
 
   const value = useMemo(
@@ -67,8 +76,38 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
             production: project.production,
             variety: project.variety,
             image: project.image,
+            gallery: project.gallery || [],
           },
         ])
+      },
+      updateProject: (id: number, projectUpdate: Partial<NewProjectInput>) => {
+        setProjects((currentProjects) =>
+          currentProjects.map((proj) => {
+            if (proj.id === id) {
+              return {
+                ...proj,
+                name: projectUpdate.name ?? proj.name,
+                location: projectUpdate.location ?? proj.location,
+                coordinates: {
+                  lat: projectUpdate.lat ?? proj.coordinates.lat,
+                  lng: projectUpdate.lng ?? proj.coordinates.lng,
+                },
+                description: projectUpdate.description ?? proj.description,
+                hectares: projectUpdate.hectares ?? proj.hectares,
+                families: projectUpdate.families ?? proj.families,
+                yearStarted: projectUpdate.yearStarted ?? proj.yearStarted,
+                production: projectUpdate.production ?? proj.production,
+                variety: projectUpdate.variety ?? proj.variety,
+                image: projectUpdate.image ?? proj.image,
+                gallery: projectUpdate.gallery ?? proj.gallery,
+              }
+            }
+            return proj
+          })
+        )
+      },
+      deleteProject: (id: number) => {
+        setProjects((currentProjects) => currentProjects.filter((proj) => proj.id !== id))
       },
     }),
     [projects]

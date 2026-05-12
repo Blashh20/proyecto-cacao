@@ -118,7 +118,7 @@ export function ProductsSection() {
                 <div className="overflow-hidden rounded-2xl border border-border bg-card transition-all duration-500 hover:border-forest/50">
                   <div className="relative aspect-square overflow-hidden">
                     <Image
-                      src={product.imagen_url}
+                      src={product.imagen_url?.split('|')[0] || '/images/cacao-beans.jpg'}
                       alt={product.nombre_derivado}
                       fill
                       className={cn(
