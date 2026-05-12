@@ -4,7 +4,6 @@ import { Analytics } from "@vercel/analytics/react"
 
 import { AuthProvider } from "@/controller/auth-controller"
 import { ProjectsProvider } from "@/controller/projects-controller"
-// @ts-expect-error CSS import is resolved by Next.js bundler
 import "./globals.css"
 import "leaflet/dist/leaflet.css"
 
@@ -30,19 +29,19 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: "/icon-light-32x32.png",
+        url: "/images/logo_transparente.png",
         media: "(prefers-color-scheme: light)",
       },
       {
-        url: "/icon-dark-32x32.png",
+        url: "/images/logo_transparente.png",
         media: "(prefers-color-scheme: dark)",
       },
       {
-        url: "/icon.svg",
-        type: "image/svg+xml",
+        url: "/images/logo_transparente.png",
+        type: "image/png",
       },
     ],
-    apple: "/apple-icon.png",
+    apple: "/images/logo_transparente.png",
   },
 }
 

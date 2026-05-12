@@ -15,10 +15,9 @@ import {
 
 import {
   calculateYield,
-  type AdminSection,
-  marketData,
   useAdminProjectsPanelController,
 } from "@/controller/admin-projects-panel-controller"
+import { marketData, type AdminSection } from "@/model/admin-projects"
 
 const inputClassName =
   "w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/20"

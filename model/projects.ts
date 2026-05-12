@@ -1,5 +1,3 @@
-import { supabase } from "@/services/client"
-
 export interface Project {
   id: number
   name: string
@@ -24,7 +22,7 @@ export interface ProjectGalleryImage {
 
 export const defaultProjects: Project[] = []
 
-interface SupabaseProjectRow {
+export interface SupabaseProjectRow {
   id: number
   nombre: string
   ubicacion: string
@@ -53,7 +51,7 @@ export interface NewProjectInput {
   image: string
 }
 
-function mapRowToProject(row: SupabaseProjectRow): Project {
+export function mapRowToProject(row: SupabaseProjectRow): Project {
   return {
     id: row.id,
     name: row.nombre,
@@ -67,40 +65,4 @@ function mapRowToProject(row: SupabaseProjectRow): Project {
     variety: row.variedad,
     image: row.imagen ?? "/images/cacao-pods.jpg",
   }
-}
-
-export async function fetchProjects(): Promise<Project[]> {
-  const { data, error } = await supabase
-    .rpc("obtener_proyectos");
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return (data ?? [] as SupabaseProjectRow[]).map((row: SupabaseProjectRow) =>
-    mapRowToProject(row)
-  );
-}
-
-export async function createProject(project: NewProjectInput): Promise<Project> {
-  const { data, error } = await supabase
-    .rpc("crear_proyecto", {
-      nombre: project.name,
-      ubicacion: project.location,
-      latitud: project.lat,
-      longitud: project.lng,
-      descripcion: project.description,
-      hectareas: project.hectares,
-      familias: project.families,
-      anio_inicio: project.yearStarted,
-      produccion: project.production,
-      variedad: project.variety,
-      imagen: project.image,  
-    })
-
-  if (error) {
-    throw error
-  }
-
-  return mapRowToProject(data)
 }

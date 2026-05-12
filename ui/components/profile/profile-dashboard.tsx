@@ -2,30 +2,7 @@
 
 import { CreditCard, KeyRound, Shield, ShoppingBag } from "lucide-react"
 import { useState, type ReactNode } from "react"
-
-export type Tab = "resumen" | "compras" | "perfil" | "pagos" | "seguridad"
-
-export interface PurchaseRow {
-  id: string
-  fecha: string
-  total: number
-  estado: string
-  items: number
-}
-
-export interface PaymentSettings {
-  metodo_preferido: string
-  titular_facturacion: string
-  documento_facturacion: string
-}
-
-export interface PaymentMethodItem {
-  id: string
-  tipo: "credito" | "debito" | "nequi" | "daviplata" | "transferencia" | "efectivo"
-  alias: string
-  ultimos4: string
-  principal: boolean
-}
+import type { PaymentMethodItem, PaymentSettings, PurchaseRow, Tab } from "@/model/profile"
 
 export function ProfileHero({
   fullName,

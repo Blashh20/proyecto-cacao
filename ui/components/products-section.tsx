@@ -4,24 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { ArrowRight, ShoppingBag, Star } from "lucide-react";
 
+import { useProducts } from "@/controller/products-controller";
 import { cn } from "@/ui/utils";
-import { supabase } from "@/services/client";
-
-type ProductItem = {
-  id_producto: number;
-  nombre_derivado: string;
-  imagen_url: string;
-  tag: string;
-  rating: number;
-  descripcion: string;
-  precio?: number | null;
-};
 
 export function ProductsSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [hoveredProduct, setHoveredProduct] = useState<number | null>(null);
-  const [products, setProducts] = useState<ProductItem[]>([]);
+  const { products } = useProducts();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -33,31 +23,12 @@ export function ProductsSection() {
       { threshold: 0.1 },
     );
 
-    const loadProducts = async () => {
-      const productsData = await cargarProductos();
-      setProducts(productsData);
-    };
-
-    loadProducts();
-
     if (sectionRef.current) {
       observer.observe(sectionRef.current);
     }
 
     return () => observer.disconnect();
   }, []);
-
-  const cargarProductos = async () => {
-    const { data, error } = await supabase
-      .rpc("obtener_productos");
-
-    if (error) {
-      console.error(error);
-      return [];
-    }
-
-    return (data ?? []) as ProductItem[];
-  };
 
   return (
     <section
@@ -128,7 +99,7 @@ export function ProductsSection() {
                 <div className="overflow-hidden rounded-2xl border border-border bg-card transition-all duration-500 hover:border-forest/50">
                   <div className="relative aspect-square overflow-hidden">
                     <Image
-                      src={product.imagen_url}
+                      src=""
                       alt={product.nombre_derivado}
                       fill
                       className={cn(

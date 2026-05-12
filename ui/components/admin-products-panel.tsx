@@ -1,70 +1,18 @@
 "use client"
 
-import { useState, type ChangeEvent, type FormEvent } from "react"
 import { PlusCircle, ShieldCheck } from "lucide-react"
+import type { ReactNode } from "react"
 
-import { useAuth } from "@/controller/auth-controller"
-import { supabase } from "@/services/client"
-
-interface ProductFormState {
-  nombre_derivado: string
-  descripcion: string
-  imagen_url: string
-  tag: string
-  rating: string
-}
-
-const initialForm: ProductFormState = {
-  nombre_derivado: "",
-  descripcion: "",
-  imagen_url: "/images/cacao-beans.jpg",
-  tag: "",
-  rating: "4.8",
-}
+import { useAdminProductsPanelController } from "@/controller/admin-products-panel-controller"
 
 const inputClassName =
   "w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/20"
 
 export function AdminProductsPanel() {
-  const { user } = useAuth()
-  const [form, setForm] = useState<ProductFormState>(initialForm)
-  const [isSaving, setIsSaving] = useState(false)
-  const [message, setMessage] = useState("")
-  const [errorMessage, setErrorMessage] = useState("")
+  const { user, form, isSaving, message, errorMessage, handleChange, handleSubmit } = useAdminProductsPanelController()
 
   if (user?.role !== "admin") {
     return null
-  }
-
-  const handleChange = (field: keyof ProductFormState) => (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm((current) => ({ ...current, [field]: event.target.value }))
-  }
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setIsSaving(true)
-    setMessage("")
-    setErrorMessage("")
-
-    const payload = {
-      nombre_derivado: form.nombre_derivado.trim(),
-      descripcion: form.descripcion.trim(),
-      imagen_url: form.imagen_url.trim(),
-      tag: form.tag.trim(),
-      rating: Number(form.rating),
-    }
-
-    const { error } = await supabase.from("productos_derivados").insert(payload)
-
-    if (error) {
-      setErrorMessage(`No se pudo guardar el producto: ${error.message}`)
-      setIsSaving(false)
-      return
-    }
-
-    setForm(initialForm)
-    setMessage("Producto agregado correctamente.")
-    setIsSaving(false)
   }
 
   return (
@@ -118,7 +66,7 @@ export function AdminProductsPanel() {
   )
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-medium text-foreground">{label}</span>

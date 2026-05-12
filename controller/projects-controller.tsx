@@ -2,7 +2,8 @@
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
 
-import { createProject, defaultProjects, fetchProjects, type NewProjectInput, type Project } from "@/model/projects"
+import { createProject, fetchProjects } from "@/controller/projects-service"
+import { defaultProjects, type NewProjectInput, type Project } from "@/model/projects"
 
 interface ProjectsContextType {
   projects: Project[]

@@ -5,6 +5,7 @@ import { HeroSection } from "@/ui/components/hero-section"
 import { AboutSection } from "@/ui/components/about-section"
 import { ProcessSection } from "@/ui/components/process-section"
 import { ProjectsMapSection } from "@/ui/components/projects-map-section"
+import { TourismSection } from "@/ui/components/tourism-section"
 import { ProductsSection } from "@/ui/components/products-section"
 import { GallerySection } from "@/ui/components/gallery-section"
 import { ContactSection } from "@/ui/components/contact-section"
@@ -20,6 +21,7 @@ export default function Home() {
       <AboutSection />
       <ProcessSection />
       <ProjectsMapSection />
+      <TourismSection />
       <AdminProjectsPanel />
       <AdminProductsPanel />
       <ProductsSection />

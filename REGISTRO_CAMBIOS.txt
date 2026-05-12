@@ -1,0 +1,36 @@
+﻿REGISTRO DETALLADO DE CAMBIOS
+Proyecto: Cacaotera Business
+Formato de registro:
+- Fecha/Hora
+- Solicitud
+- Archivos creados/modificados/eliminados
+- Comandos ejecutados
+- Resultado
+
+================================================================
+[2026-05-12 11:41:23]
+Solicitud: Crear bitácora TXT para registrar todos los cambios a partir de ahora.
+Archivos:
+- Creado/asegurado: REGISTRO_CAMBIOS.txt
+Comandos ejecutados:
+- Validación/creación del archivo de bitácora
+Resultado:
+- Bitácora habilitada correctamente.
+----------------------------------------------------------------
+[2026-05-12 11:56:47]
+Solicitud: Cambiar logos por la imagen public/images/logo.png.
+Archivos modificados:
+- app/layout.tsx
+- ui/components/header.tsx
+Cambios realizados:
+- Se corrigieron rutas de metadata de iconos para usar /images/logo.png (antes apuntaban a /public/images/logo.png).
+- Se cambió tipo de icono de image/svg+xml a image/png.
+- Se reemplazó el icono SVG del header por la imagen real /images/logo.png usando next/image.
+Comandos ejecutados:
+- Búsqueda de referencias de logo e imágenes.
+- Edición de archivos con apply_patch.
+Resultado:
+- Logo visual y metadatos de icono ahora usan public/images/logo.png.
+Observación:
+- No se encontró actualmente la carpeta paralela cacaotera-business-vite en el workspace para aplicar este cambio ahí.
+----------------------------------------------------------------
