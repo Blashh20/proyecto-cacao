@@ -27,7 +27,7 @@ import {
 
 const tabs: { id: Tab; label: string }[] = [
   { id: "resumen", label: "Inicio" },
-  { id: "compras", label: "Compras" },
+  { id: "compras", label: "Ventas" },
   { id: "perfil", label: "Informacion" },
   { id: "pagos", label: "Pagos" },
   { id: "seguridad", label: "Seguridad" },
@@ -99,7 +99,7 @@ export default function PerfilPage() {
         primer_apellido: loadedProfile?.primer_apellido ?? "",
         segundo_apellido: loadedProfile?.segundo_apellido ?? "",
         tipo_identificacion: loadedProfile?.tipo_identificacion ?? "",
-        numero_identificacion: loadedProfile?.numero_identificacion ?? "",
+        numero_identificacion: loadedProfile?.id_usuario ?? "",
         telefono_celular: loadedProfile?.telefono_celular ?? "",
         foto_perfil_url: loadedProfile?.foto_perfil_url ?? "",
       })
@@ -159,22 +159,20 @@ export default function PerfilPage() {
     setError("")
 
     const payload = {
-      id: user.id,
+      id_usuario: profileForm.numero_identificacion || user.id,
       primer_nombre: profileForm.primer_nombre || null,
       segundo_nombre: profileForm.segundo_nombre || null,
       primer_apellido: profileForm.primer_apellido || null,
       segundo_apellido: profileForm.segundo_apellido || null,
       tipo_identificacion: profileForm.tipo_identificacion || null,
-      numero_identificacion: profileForm.numero_identificacion || null,
       telefono_celular: profileForm.telefono_celular || null,
       email: user.email,
-      rol: user.role,
-      foto_perfil_url: profileForm.foto_perfil_url || null,
+      rol: user.role === "admin" ? "Administrador" : "Cliente",
     }
 
     const result = await upsertInUsuarioTables(payload)
     if (!result.ok) {
-      setError("No se pudo actualizar tu perfil en Supabase. Revisa la tabla usuario/Usuarios y sus columnas.")
+      setError("No se pudo actualizar tu perfil en Supabase. Revisa la tabla Usuario y sus columnas del diccionario.")
       return
     }
 
@@ -194,7 +192,7 @@ export default function PerfilPage() {
     const { error: paymentError } = await savePaymentSettings(user.id, paymentForm, paymentMethods)
 
     if (paymentError) {
-      setError("No se pudo guardar pagos. Crea/valida la tabla configuracion_pagos_usuario en Supabase.")
+      setError("No se pudo guardar pagos. Ese módulo es auxiliar y no está en el diccionario de datos.")
       return
     }
 

@@ -195,8 +195,8 @@ export function ProjectsProvider({
       },
 
       updateProject: (
-        id,
-        projectUpdate
+        id: number,
+        projectUpdate: Partial<NewProjectInput>
       ) => {
         setProjects(
           (

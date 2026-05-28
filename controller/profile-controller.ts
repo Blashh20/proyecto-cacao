@@ -7,37 +7,46 @@ import type {
   UsuarioProfile,
 } from "@/model/profile"
 import { supabase } from "@/services/client"
+import { DICTIONARY_TABLES } from "@/services/dictionary-db"
 
 export async function getProfile(userId: string): Promise<UsuarioProfile | null> {
   const fields =
-    "tipo_identificacion, numero_identificacion, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, email, telefono_celular, rol, foto_perfil_url"
-  const firstTry = await supabase.from("usuario").select(fields).eq("id", userId).maybeSingle<UsuarioProfile>()
-  if (firstTry.data) return firstTry.data
+    "id_usuario, tipo_identificacion, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, email, telefono_celular, rol"
 
-  const secondTry = await supabase.from("Usuarios").select(fields).eq("id", userId).maybeSingle<UsuarioProfile>()
-  if (secondTry.data) return secondTry.data
+  for (const table of DICTIONARY_TABLES.usuario) {
+    const result = await supabase
+      .from(table)
+      .select(fields)
+      .eq("id_usuario", userId)
+      .maybeSingle<UsuarioProfile>()
+
+    if (!result.error && result.data) return result.data
+  }
 
   return null
 }
 
 export async function getPurchases(userId: string): Promise<PurchaseRow[]> {
-  const tableCandidates = ["compras", "pedidos", "orders", "ordenes"]
-  const idFields = ["usuario_id", "user_id", "id_usuario", "customer_id"]
+  void userId
 
-  for (const table of tableCandidates) {
-    for (const idField of idFields) {
-      const result = await supabase.from(table).select("*").eq(idField, userId).order("created_at", { ascending: false }).limit(20)
-      if (!result.error && Array.isArray(result.data)) {
-        return result.data.map((row: Record<string, unknown>, index) => ({
-          id: String(row.id ?? row.id_compra ?? row.id_pedido ?? index + 1),
-          fecha: String(row.created_at ?? row.fecha ?? row.fecha_compra ?? new Date().toISOString()),
-          total: Number(row.total ?? row.monto_total ?? row.valor_total ?? 0),
-          estado: String(row.estado ?? row.status ?? "pendiente"),
-          items: Number(row.items_count ?? row.cantidad_items ?? row.items ?? 0),
-        }))
-      }
+  for (const table of DICTIONARY_TABLES.ventas) {
+    const result = await supabase
+      .from(table)
+      .select("id_venta, id_empresa, id_producto, id_region, cantidad, monto_total, fecha_creacion")
+      .order("fecha_creacion", { ascending: false })
+      .limit(20)
+
+    if (!result.error && Array.isArray(result.data)) {
+      return result.data.map((row: Record<string, unknown>, index) => ({
+        id: String(row.id_venta ?? index + 1),
+        fecha: String(row.fecha_creacion ?? new Date().toISOString()),
+        total: Number(row.monto_total ?? 0),
+        estado: "registrada",
+        items: Number(row.cantidad ?? 0),
+      }))
     }
   }
+
   return []
 }
 
@@ -81,23 +90,20 @@ export function parsePaymentMethods(raw: string | null | undefined): PaymentMeth
 }
 
 export async function upsertInUsuarioTables(payload: {
-  id: string
+  id_usuario: string
   primer_nombre: string | null
   segundo_nombre: string | null
   primer_apellido: string | null
   segundo_apellido: string | null
   tipo_identificacion: string | null
-  numero_identificacion: string | null
   telefono_celular: string | null
   email: string
   rol: string
-  foto_perfil_url: string | null
 }): Promise<{ ok: boolean }> {
-  const first = await supabase.from("usuario").upsert(payload, { onConflict: "id" })
-  if (!first.error) return { ok: true }
-
-  const second = await supabase.from("Usuarios").upsert(payload, { onConflict: "id" })
-  if (!second.error) return { ok: true }
+  for (const table of DICTIONARY_TABLES.usuario) {
+    const result = await supabase.from(table).upsert(payload, { onConflict: "id_usuario" })
+    if (!result.error) return { ok: true }
+  }
 
   return { ok: false }
 }

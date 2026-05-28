@@ -23,8 +23,8 @@ export interface PaymentMethodItem {
 }
 
 export interface UsuarioProfile {
+  id_usuario: string | null
   tipo_identificacion: string | null
-  numero_identificacion: string | null
   primer_nombre: string | null
   segundo_nombre: string | null
   primer_apellido: string | null

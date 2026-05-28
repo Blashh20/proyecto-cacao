@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import type { Provider, User as SupabaseUser } from "@supabase/supabase-js"
 
 import { supabase } from "@/services/client"
+import { DICTIONARY_TABLES } from "@/services/dictionary-db"
 
 interface User {
   id: string
@@ -43,9 +44,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 interface UsuarioRow {
-  id: string
+  id_usuario: string
   tipo_identificacion: string | null
-  numero_identificacion: string | null
   primer_nombre: string | null
   segundo_nombre: string | null
   primer_apellido: string | null
@@ -64,7 +64,8 @@ function getAdminEmails() {
 }
 
 function normalizeRole(roleValue: string | null | undefined): "admin" | "user" {
-  return roleValue?.trim().toLowerCase() === "admin" ? "admin" : "user"
+  const normalized = roleValue?.trim().toLowerCase() ?? ""
+  return normalized === "admin" || normalized === "administrador" || normalized === "superadministrador" ? "admin" : "user"
 }
 
 function getRoleFromSupabaseUser(user: SupabaseUser): "admin" | "user" {
@@ -101,21 +102,30 @@ function buildNameFromUsuario(profile: UsuarioRow | null, fallbackName: string) 
   return parts.join(" ")
 }
 
-async function getUsuarioProfile(id: string) {
-  const tables = ["usuario", "Usuarios", "usuarios"]
-  for (const table of tables) {
-    const { data, error } = await supabase
-      .from(table)
-      .select(
-        "id, tipo_identificacion, numero_identificacion, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, email, telefono_celular, rol"
-      )
-      .eq("id", id)
-      .maybeSingle<UsuarioRow>()
+async function getUsuarioProfile(user: SupabaseUser) {
+  const documentId = String(user.user_metadata?.numero_identificacion ?? user.user_metadata?.id_usuario ?? "").trim()
+  const email = (user.email ?? "").trim().toLowerCase()
 
-    if (!error && data) {
-      return data
+  for (const table of DICTIONARY_TABLES.usuario) {
+    const fields = "id_usuario, tipo_identificacion, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, email, telefono_celular, rol"
+    const filters = [
+      documentId ? { column: "id_usuario", value: documentId } : null,
+      email ? { column: "email", value: email } : null,
+    ].filter((filter): filter is { column: string; value: string } => filter !== null)
+
+    for (const filter of filters) {
+      const { data, error } = await supabase
+        .from(table)
+        .select(fields)
+        .eq(filter.column, filter.value)
+        .maybeSingle<UsuarioRow>()
+
+      if (!error && data) {
+        return data
+      }
     }
   }
+
   return null
 }
 
@@ -124,11 +134,11 @@ async function mapSupabaseUser(user: SupabaseUser): Promise<User> {
   const fallbackName = email.includes("@") ? email.split("@")[0] : "Usuario"
   const metadataName = user.user_metadata?.name ?? user.user_metadata?.full_name
   const fallbackFromMetadata = typeof metadataName === "string" && metadataName.trim().length > 0 ? metadataName : fallbackName
-  const profile = await getUsuarioProfile(user.id)
+  const profile = await getUsuarioProfile(user)
   const roleFromProfile = normalizeRole(profile?.rol)
 
   return {
-    id: user.id,
+    id: profile?.id_usuario ?? String(user.user_metadata?.numero_identificacion ?? user.user_metadata?.id_usuario ?? user.id),
     email: profile?.email ?? email,
     name: buildNameFromUsuario(profile, fallbackFromMetadata),
     role: roleFromProfile === "admin" ? "admin" : getRoleFromSupabaseUser(user),
@@ -261,7 +271,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           primer_apellido: normalizedPrimerApellido,
           segundo_apellido: normalizedSegundoApellido || null,
           telefono_celular: normalizedTelefono,
-          role: "user",
+          id_usuario: normalizedNumero,
+          role: "Cliente",
         },
       },
     })
@@ -276,19 +287,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const profilePayload = {
-      id: createdUser.id,
+      id_usuario: normalizedNumero,
       tipo_identificacion: normalizedTipo || null,
-      numero_identificacion: normalizedNumero,
       primer_nombre: normalizedPrimerNombre,
       segundo_nombre: normalizedSegundoNombre || null,
       primer_apellido: normalizedPrimerApellido,
       segundo_apellido: normalizedSegundoApellido || null,
       email: normalizedEmail,
       telefono_celular: normalizedTelefono || null,
-      rol: "user",
+      rol: "Cliente",
     }
 
-    const profileTables = ["Usuarios", "usuario", "usuarios"]
+    const profileTables = DICTIONARY_TABLES.usuario
     let lastProfileError: string | null = null
     let inserted = false
 

@@ -1,6 +1,7 @@
 "use client"
 
 import { CreditCard, KeyRound, Shield, ShoppingBag } from "lucide-react"
+import Image from "next/image"
 import { useState, type ReactNode } from "react"
 import type { PaymentMethodItem, PaymentSettings, PurchaseRow, Tab } from "@/model/profile"
 
@@ -27,7 +28,13 @@ export function ProfileHero({
       <div className="px-5 pb-4 md:px-8">
         <div className="-mt-14 flex flex-col gap-4 md:-mt-16 md:flex-row md:items-end md:justify-between">
           <div className="flex items-end gap-4">
-            <img src={avatarUrl} alt="Foto de perfil" className="h-28 w-28 rounded-full border-4 border-card object-cover md:h-36 md:w-36" />
+            <Image
+              src={avatarUrl}
+              alt="Foto de perfil"
+              width={144}
+              height={144}
+              className="h-28 w-28 rounded-full border-4 border-card object-cover md:h-36 md:w-36"
+            />
             <div className="pb-2">
               <h1 className="text-2xl font-bold text-foreground md:text-3xl">{fullName}</h1>
               <p className="text-sm text-muted-foreground">{email}</p>
@@ -116,7 +123,7 @@ export function SummaryTab({
                 </p>
               </div>
             ))}
-            {purchases.length === 0 ? <p className="text-sm text-muted-foreground">Sin actividad de compras por ahora.</p> : null}
+            {purchases.length === 0 ? <p className="text-sm text-muted-foreground">Sin ventas registradas por ahora.</p> : null}
           </div>
         </article>
       </div>
@@ -130,7 +137,7 @@ export function PurchasesTab({ purchases }: { purchases: PurchaseRow[] }) {
       <div className="space-y-3">
         {purchases.length === 0 ? (
           <div className="rounded-2xl border border-border bg-background p-6 text-muted-foreground">
-            Aun no encontramos compras en Supabase para este usuario. Si ya tienes datos, valida tabla/campos (`compras`, `pedidos`, `orders`).
+            Aún no encontramos registros en `ventas` con los campos del diccionario.
           </div>
         ) : (
           purchases.map((purchase) => (
@@ -198,7 +205,7 @@ export function ProfileFormTab({
         <Input label="Primer apellido" value={form.primer_apellido} onChange={(value) => setForm((s) => ({ ...s, primer_apellido: value }))} />
         <Input label="Segundo apellido" value={form.segundo_apellido} onChange={(value) => setForm((s) => ({ ...s, segundo_apellido: value }))} />
         <Input label="Tipo de identificacion" value={form.tipo_identificacion} onChange={(value) => setForm((s) => ({ ...s, tipo_identificacion: value }))} />
-        <Input label="Numero de identificacion" value={form.numero_identificacion} onChange={(value) => setForm((s) => ({ ...s, numero_identificacion: value }))} />
+        <Input label="ID usuario / documento" value={form.numero_identificacion} onChange={(value) => setForm((s) => ({ ...s, numero_identificacion: value }))} />
         <Input label="Telefono" value={form.telefono_celular} onChange={(value) => setForm((s) => ({ ...s, telefono_celular: value }))} />
         <Input label="Foto de perfil (URL)" value={form.foto_perfil_url} onChange={(value) => setForm((s) => ({ ...s, foto_perfil_url: value }))} />
         <div className="md:col-span-2">

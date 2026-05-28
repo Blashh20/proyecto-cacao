@@ -1,25 +1,20 @@
 export type RoutePoint = {
   id_punto: string
-  name: string
-
-  latitude: number
-  longitude: number
-
-  type: string // mirador, finca, cascada, hidratación
-
-  image?: string
-  history?: string
-  description?: string
-
-  order: number
-
-  regionId?: string
+  nombre_lugar: string
+  latitud: number
+  longitud: number
+  tipo_punto: string
+  id_region: string
+  orden: number
+  id_ruta_punto?: string
 }
 
 export type TouristRoute = {
   id_ruta: string
-  name: string
-  difficulty: string
-  duration: string
+  nombre_ruta: string
+  distancia_total: number
+  tiempo_estimado: string
+  nivel_dificultad: "Bajo" | "Medio" | "Alto" | string
+  id_empresa: string
   points: RoutePoint[]
 }

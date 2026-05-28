@@ -4,6 +4,7 @@
 
 export interface Project {
   id: number
+  id_empresa?: string
 
   // Empresa
   name: string
@@ -74,16 +75,16 @@ export interface ProjectGalleryImage {
 
 export interface NewProjectInput {
   name: string
-  nit: string
-  status: string
+  nit?: string
+  status?: string
 
   location: string
 
   lat: number
   lng: number
 
-  localType: string
-  phone: string
+  localType?: string
+  phone?: string
 
   description: string
   hectares?: number
