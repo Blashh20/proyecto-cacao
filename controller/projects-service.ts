@@ -151,12 +151,12 @@ function transformEmpresaToProject(params: {
 export async function fetchProjects(): Promise<Project[]> {
   const [empresas, puntos, fincas, impactos, catalogo, productos, vinculos, fotos] = await Promise.all([
     selectFirstAvailableTable(DICTIONARY_TABLES.empresa, "id_empresa, nombre_comercial, nit, estado_servicio, id_usuario, id_punto_geografico, fecha_creacion"),
-    selectFirstAvailableTable(DICTIONARY_TABLES.puntosGeograficos, "id_punto, nombre_lugar, latitud, longitud, tipo_punto, id_region"),
+    selectFirstAvailableTable(DICTIONARY_TABLES.puntosGeograficos, "id_punto_geografico, nombre_lugar, latitud, longitud, tipo_punto, id_region"),
     selectFirstAvailableTable(DICTIONARY_TABLES.fincas, "id_finca, id_empresa, id_region, nombre_finca, area_hectareas, geometria_poligono, cumple_norma_ue, analisis_dofa, fecha_creacion"),
     selectFirstAvailableTable(DICTIONARY_TABLES.impactoSostenibilidad, "id_impacto, id_finca, hectareas_conservadas, empleos_comunitarios, indice_regeneracion, fecha_creacion"),
     selectFirstAvailableTable(DICTIONARY_TABLES.catalogoEmpresa, "id_catalogo, id_empresa, id_producto, precio_sugerido, costo_produccion, fecha_creacion"),
     selectFirstAvailableTable(DICTIONARY_TABLES.productosDerivados, "id_producto, nombre_derivado, categoria, descripcion_tecnica, fecha_creacion"),
-    selectFirstAvailableTable(DICTIONARY_TABLES.vinculoGaleria, "id_vinculo, id_foto, entidad_tipo, id_empresa, fecha_creacion"),
+    selectFirstAvailableTable(DICTIONARY_TABLES.vinculoGaleria, "id_vinculo, id_foto, entidad_tipo, id_empresa"),
     selectFirstAvailableTable(DICTIONARY_TABLES.galeriaFotos, "id_foto, url_foto, titulo, descripcion, fecha_creacion"),
   ])
 

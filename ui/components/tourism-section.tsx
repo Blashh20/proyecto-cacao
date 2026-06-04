@@ -1,8 +1,8 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
-import { Compass, MapPin, Route } from "lucide-react"
+import { Compass, MapPin, Route, X } from "lucide-react"
 import { cn } from "@/ui/utils"
 import {
   getTourismRoutePoints,
@@ -22,7 +22,7 @@ export function TourismSection() {
   const [selectedRouteId, setSelectedRouteId] = useState("")
   const [hoveredPointId, setHoveredPointId] = useState("")
   const [isLoading, setIsLoading] = useState(true)
-
+  
   useEffect(() => {
     let active = true
 
@@ -52,9 +52,26 @@ export function TourismSection() {
     orderedPoints.find((point) => point.id_punto === hoveredPointId) ??
     orderedPoints[0]
 
+  useEffect(() => {
+    if (selectedRoute) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = ""
+    }
+
+    return () => {
+      document.body.style.overflow = ""
+    }
+  }, [selectedRoute])
+
   const openRoute = (route: TouristRouteDto) => {
     setSelectedRouteId(route.id_ruta)
     setHoveredPointId(route.points[0]?.id_punto ?? "")
+  }
+
+  const closeRoute = () => {
+    setSelectedRouteId("")
+    setHoveredPointId("")
   }
 
   return (
@@ -142,7 +159,25 @@ export function TourismSection() {
                 Selecciona una tarjeta para abrir la información completa de la ruta.
               </div>
             ) : (
-              <div className="grid gap-6 lg:grid-cols-3">
+              <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4">
+                <button
+                  type="button"
+                  aria-label="Cerrar ventana de ruta"
+                  className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                  onClick={closeRoute}
+                />
+
+                <div className="relative max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-border bg-card p-5 shadow-2xl animate-in fade-in zoom-in-95 duration-300 sm:p-6">
+                  <button
+                    type="button"
+                    onClick={closeRoute}
+                    className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-background/90 text-foreground transition-colors hover:bg-background"
+                    aria-label="Cerrar"
+                  >
+                    <X size={20} />
+                  </button>
+
+                  <div className="grid gap-6 lg:grid-cols-3">
                 <div className="space-y-3 lg:col-span-1">
                   <div className="rounded-2xl border border-border bg-card p-4">
                     <p className="text-xs uppercase tracking-wide text-forest">
@@ -155,7 +190,9 @@ export function TourismSection() {
                       <p>Dificultad: {selectedRoute.nivel_dificultad}</p>
                       <p>Duración: {selectedRoute.tiempo_estimado || "Sin tiempo estimado"}</p>
                       <p>Distancia: {formatDistance(selectedRoute.distancia_total)} km</p>
-                      {selectedRoute.id_empresa && <p>Empresa: {selectedRoute.id_empresa}</p>}
+                      {(selectedRoute.nombre_empresa || selectedRoute.id_empresa) && (
+                        <p>Empresa: {selectedRoute.nombre_empresa ?? selectedRoute.id_empresa}</p>
+                      )}
                     </div>
                   </div>
 
@@ -186,7 +223,8 @@ export function TourismSection() {
                     <h3 className="font-semibold">{selectedRoute.nombre_ruta}</h3>
                   </div>
 
-                  <div className="relative h-[300px] rounded-2xl bg-gradient-to-br from-forest/10 via-forest/5 to-background">
+                  <div className="relative h-[340px] overflow-hidden rounded-2xl border border-border bg-[radial-gradient(circle_at_20%_20%,rgba(34,197,94,0.16),transparent_28%),radial-gradient(circle_at_80%_70%,rgba(245,222,179,0.13),transparent_24%),linear-gradient(135deg,hsl(var(--background)),hsl(var(--card)))] shadow-inner">
+                    <div className="absolute inset-0 opacity-25 [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:32px_32px]" />
                     <svg
                       className="absolute inset-0 h-full w-full"
                       viewBox="0 0 100 100"
@@ -195,22 +233,37 @@ export function TourismSection() {
                       <polyline
                         points={orderedPoints
                           .map((point, index, list) => {
-                            const x = list.length > 1 ? (index / (list.length - 1)) * 90 + 5 : 50
-                            const y = 50 + Math.sin(index * 1.2) * 20
+                            const x = list.length > 1 ? (index / (list.length - 1)) * 86 + 7 : 50
+                            const y = 52 + Math.sin(index * 1.35) * 24
+                            return `${x},${y}`
+                          })
+                          .join(" ")}
+                        fill="none"
+                        stroke="rgba(255,255,255,0.58)"
+                        strokeWidth="7"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <polyline
+                        points={orderedPoints
+                          .map((point, index, list) => {
+                            const x = list.length > 1 ? (index / (list.length - 1)) * 86 + 7 : 50
+                            const y = 52 + Math.sin(index * 1.35) * 24
                             return `${x},${y}`
                           })
                           .join(" ")}
                         fill="none"
                         stroke="hsl(var(--forest))"
-                        strokeWidth="1.7"
+                        strokeWidth="3"
                         strokeLinecap="round"
-                        strokeDasharray="4 2"
+                        strokeLinejoin="round"
+                        strokeDasharray="7 5"
                       />
                     </svg>
 
                     {orderedPoints.map((point, index, list) => {
-                      const x = list.length > 1 ? (index / (list.length - 1)) * 90 + 5 : 50
-                      const y = 50 + Math.sin(index * 1.2) * 20
+                      const x = list.length > 1 ? (index / (list.length - 1)) * 86 + 7 : 50
+                      const y = 52 + Math.sin(index * 1.35) * 24
 
                       return (
                         <button
@@ -219,15 +272,15 @@ export function TourismSection() {
                           onMouseEnter={() => setHoveredPointId(point.id_punto)}
                           onFocus={() => setHoveredPointId(point.id_punto)}
                           className={cn(
-                            "absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-forest text-white shadow-lg transition-all",
-                            activePoint?.id_punto === point.id_punto ? "h-8 w-8 scale-110" : "h-6 w-6"
+                            "absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-forest text-white shadow-xl ring-4 ring-black/20 transition-all",
+                            activePoint?.id_punto === point.id_punto ? "h-10 w-10 scale-110" : "h-8 w-8"
                           )}
                           style={{
                             left: `${x}%`,
                             top: `${y}%`,
                           }}
                         >
-                          <span className="text-[10px] font-bold">{index + 1}</span>
+                          <span className="text-xs font-bold">{index + 1}</span>
                         </button>
                       )
                     })}
@@ -268,6 +321,8 @@ export function TourismSection() {
                       </div>
                     </div>
                   )}
+                </div>
+                  </div>
                 </div>
               </div>
             )}

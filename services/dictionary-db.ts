@@ -1,6 +1,6 @@
 export const DICTIONARY_TABLES = {
   usuario: ["usuario", "Usuario", "Usuarios", "usuarios"],
-  empresa: ["empresa", "Empresa", "empresas"],
+  empresa: ["empresas"],
   regiones: ["regiones", "Regiones"],
   culturaRegion: ["cultura_region", "Cultura_Region"],
   fincas: ["fincas", "Fincas"],

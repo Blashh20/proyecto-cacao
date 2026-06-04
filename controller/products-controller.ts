@@ -45,6 +45,7 @@ export async function fetchProducts(): Promise<ProductItem[]> {
       : Promise.resolve({ data: [], error: null }),
   ])
 
+
   const priceByProductId = new Map<string, number>()
   if (!catalogRes.error && Array.isArray(catalogRes.data)) {
     for (const row of catalogRes.data as Record<string, unknown>[]) {

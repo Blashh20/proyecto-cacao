@@ -20,6 +20,7 @@ export type TouristRouteDto = {
   tiempo_estimado: string
   nivel_dificultad: string
   id_empresa?: string
+  nombre_empresa?: string
   points: RoutePointDto[]
 }
 
@@ -48,12 +49,13 @@ const asNumber = (value: unknown, fallback = 0) => {
 const buildRoutesFromTables = (
   routeRows: RawRow[],
   routePointRows: RawRow[],
-  geoPointRows: RawRow[]
+  geoPointRows: RawRow[],
+  companiesById = new Map<string, string>()
 ): TouristRouteDto[] => {
   const geoPointsById = new Map<string, RawRow>()
 
   for (const geoPoint of geoPointRows) {
-    const pointId = asString(geoPoint.id_punto)
+    const pointId = asString(geoPoint.id_punto_geografico ?? geoPoint.id_punto)
     if (pointId) geoPointsById.set(pointId, geoPoint)
   }
 
@@ -61,7 +63,7 @@ const buildRoutesFromTables = (
 
   for (const relation of routePointRows) {
     const routeId = asString(relation.id_ruta)
-    const pointId = asString(relation.id_punto)
+    const pointId = asString(relation.id_punto_geografico ?? relation.id_punto)
     if (!routeId || !pointId) continue
 
     const geoPoint = geoPointsById.get(pointId)
@@ -84,6 +86,7 @@ const buildRoutesFromTables = (
 
   return routeRows.map((route) => {
     const routeId = asString(route.id_ruta)
+    const companyId = asString(route.id_empresa)
     const points = (pointsByRouteId.get(routeId) ?? []).sort((a, b) => a.orden - b.orden)
 
     return {
@@ -92,7 +95,8 @@ const buildRoutesFromTables = (
       distancia_total: asNumber(route.distancia_total, 0),
       tiempo_estimado: asString(route.tiempo_estimado, ""),
       nivel_dificultad: asString(route.nivel_dificultad, "Medio"),
-      id_empresa: asString(route.id_empresa) || undefined,
+      id_empresa: companyId || undefined,
+      nombre_empresa: companiesById.get(companyId) || undefined,
       points,
     }
   })
@@ -113,30 +117,51 @@ const getRoutesFromDictionaryTables = async () => {
     return { routes: [], error: null }
   }
 
+  const companyIds = [...new Set(routeRows.map((route) => asString(route.id_empresa)).filter(Boolean))]
+  const companiesById = new Map<string, string>()
+
+  if (companyIds.length > 0) {
+    const companiesRes = await supabase
+      .from("empresas")
+      .select("id_empresa, nombre_comercial")
+      .in("id_empresa", companyIds)
+
+    if (!companiesRes.error && Array.isArray(companiesRes.data)) {
+      for (const company of companiesRes.data as RawRow[]) {
+        const companyId = asString(company.id_empresa)
+        const companyName = asString(company.nombre_comercial)
+        if (companyId && companyName) companiesById.set(companyId, companyName)
+      }
+    } else if (process.env.NODE_ENV !== "production") {
+      console.warn("No se pudieron consultar empresas:", companiesRes.error)
+    }
+  }
+
   const routeIds = routeRows.map((route) => asString(route.id_ruta)).filter(Boolean)
   const routePointsRes = await supabase
     .from("puntos_de_ruta")
-    .select("id_ruta_punto, id_ruta, id_punto, orden")
+    .select("id_punto_ruta, id_ruta, id_punto_geografico, orden")
     .in("id_ruta", routeIds)
     .order("orden", { ascending: true })
+
 
   if (routePointsRes.error || !Array.isArray(routePointsRes.data)) {
     if (process.env.NODE_ENV !== "production") {
       console.warn("No se pudieron consultar puntos_de_ruta:", routePointsRes.error)
     }
 
-    return { routes: buildRoutesFromTables(routeRows, [], []), error: null }
+    return { routes: buildRoutesFromTables(routeRows, [], [], companiesById), error: null }
   }
 
   const routePointRows = routePointsRes.data as RawRow[]
-  const pointIds = [...new Set(routePointRows.map((point) => asString(point.id_punto)).filter(Boolean))]
+  const pointIds = [...new Set(routePointRows.map((point) => asString(point.id_punto_geografico ?? point.id_punto)).filter(Boolean))]
   let geoPointRows: RawRow[] = []
 
   if (pointIds.length > 0) {
     const geoPointsRes = await supabase
       .from("puntos_geograficos")
-      .select("id_punto, nombre_lugar, latitud, longitud, tipo_punto, id_region")
-      .in("id_punto", pointIds)
+      .select("id_punto_geografico, nombre_lugar, latitud, longitud, tipo_punto, id_region")
+      .in("id_punto_geografico", pointIds)
 
     if (!geoPointsRes.error && Array.isArray(geoPointsRes.data)) {
       geoPointRows = geoPointsRes.data as RawRow[]
@@ -145,7 +170,7 @@ const getRoutesFromDictionaryTables = async () => {
     }
   }
 
-  return { routes: buildRoutesFromTables(routeRows, routePointRows, geoPointRows), error: null }
+  return { routes: buildRoutesFromTables(routeRows, routePointRows, geoPointRows, companiesById), error: null }
 }
 
 const normalizeFlatRow = (row: RawRow) => ({
@@ -155,6 +180,7 @@ const normalizeFlatRow = (row: RawRow) => ({
   duration: asString(row.tiempo_estimado ?? row.duration ?? row.duracion, ""),
   distanceTotal: asNumber(row.distancia_total ?? row.distance_km ?? row.distancia_km ?? row.distancia, 0),
   companyId: asString(row.id_empresa ?? row.company_id, ""),
+  companyName: asString(row.nombre_empresa ?? row.nombre_comercial ?? row.company_name ?? row.empresa, ""),
   routePointId: asString(row.id_ruta_punto ?? row.id_punto_ruta, ""),
   pointId: asString(row.id_punto ?? row.point_id ?? row.idPunto),
   pointName: asString(row.nombre_lugar ?? row.point_name ?? row.nombre_punto),
@@ -185,6 +211,7 @@ const buildRoutesFromRpcRows = (rows: RawRow[]): TouristRouteDto[] => {
         tiempo_estimado: asString(route.tiempo_estimado ?? route.duracion, ""),
         nivel_dificultad: asString(route.nivel_dificultad ?? route.dificultad, "Medio"),
         id_empresa: asString(route.id_empresa) || undefined,
+        nombre_empresa: asString(route.nombre_empresa ?? route.nombre_comercial ?? route.empresa) || undefined,
         points: pointsRaw
           .map((point) => ({
             id_punto: asString(point.id_punto, `${asString(route.id_ruta)}-${asNumber(point.orden ?? point.orden_visita, 0)}`),
@@ -215,6 +242,7 @@ const buildRoutesFromRpcRows = (rows: RawRow[]): TouristRouteDto[] => {
         tiempo_estimado: normalized.duration,
         nivel_dificultad: normalized.difficulty,
         id_empresa: normalized.companyId || undefined,
+        nombre_empresa: normalized.companyName || undefined,
         points: [],
       })
     }

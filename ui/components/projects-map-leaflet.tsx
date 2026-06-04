@@ -66,7 +66,6 @@ export function ProjectsMapLeaflet({
   onProjectClick: (project: Project) => void
   hoveredProject: number | null
 }) {
-  console.log(projects)
   return (
     <MapContainer
       center={MAP_CENTER}

@@ -146,7 +146,7 @@ export function ProjectsMapSection() {
                 <>
                   <div className="relative h-56 overflow-hidden sm:h-64">
                     <img
-                      src={getProjectGallery(selectedProject)[selectedGalleryImage].src || "/public/images/simbolo.png"}
+                      src={getProjectGallery(selectedProject)[selectedGalleryImage].src || "/images/simbolo.png"}
                       alt={getProjectGallery(selectedProject)[selectedGalleryImage].alt}
                       className="h-full w-full object-cover"
                     />
@@ -173,14 +173,14 @@ export function ProjectsMapSection() {
                           selectedGalleryImage === index ? "border-forest ring-2 ring-forest/30" : "border-border"
                         )}
                       >
-                        <img src={image.src || "/public/images/simbolo.png"} alt={image.alt} className="h-20 w-full object-cover" />
+                        <img src={image.src || "/images/simbolo.png"} alt={image.alt} className="h-20 w-full object-cover" />
                       </button>
                     ))}
                   </div>
                 </>
               ) : (
               <div className="relative h-48 overflow-hidden">
-                <img src={selectedProject.image || "/public/images/simbolo.png"} alt={selectedProject.name} className="h-full w-full object-cover" />
+                <img src={selectedProject.image || "/images/simbolo.png"} alt={selectedProject.name} className="h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
                 <button
                   onClick={() => setSelectedProject(null)}
@@ -330,4 +330,3 @@ function getProjectGallery(project: Project): ProjectGalleryImage[] {
     },
   ]
 }
-
