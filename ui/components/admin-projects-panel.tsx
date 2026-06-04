@@ -544,7 +544,7 @@ export function AdminProjectsPanel() {
                   icon={<Sprout size={20} className="text-forest" />}
                   description="Revision rapida de los proyectos registrados."
                 >
-                  <div className="space-y-4">
+                  <div className="max-h-[560px] space-y-4 overflow-y-auto pr-2">
                     {projects.slice().reverse().map((project) => (
                       <article key={project.id} className="rounded-2xl border border-border bg-background p-4 cursor-pointer hover:border-forest/50 transition-colors" onClick={() => handleProjectSelect(project)}>
                         <div className="flex items-start justify-between gap-4">

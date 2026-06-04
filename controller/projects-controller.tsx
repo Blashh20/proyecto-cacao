@@ -16,7 +16,7 @@ import {
 import {
   createProject,
   fetchProjects,
-} from "@/controller/projects-service"
+} from "@/services/projects-service"
 
 import type {
   NewProjectInput,

@@ -33,15 +33,14 @@ export async function fetchProducts(): Promise<ProductItem[]> {
     productIds.length > 0
       ? supabase
           .from(DICTIONARY_TABLES.catalogoEmpresa[0])
-          .select("id_catalogo, id_producto, precio_sugerido, costo_produccion")
+          .select("id_catalogo, id_producto, precio_sugerido")
           .in("id_producto", productIds)
       : Promise.resolve({ data: [], error: null }),
     productIds.length > 0
       ? supabase
           .from(DICTIONARY_TABLES.vinculoGaleria[0])
-          .select("id_vinculo, id_foto, entidad_tipo, id_empresa")
+          .select("id_vinculo, id_foto, entidad_tipo")
           .eq("entidad_tipo", "PRODUCTO")
-          .in("id_empresa", productIds)
       : Promise.resolve({ data: [], error: null }),
   ])
 
@@ -51,6 +50,7 @@ export async function fetchProducts(): Promise<ProductItem[]> {
     for (const row of catalogRes.data as Record<string, unknown>[]) {
       const productId = asString(row.id_producto)
       if (productId && !priceByProductId.has(productId)) {
+        console.log("Producto", productId, "precio sugerido:", row.precio_sugerido)
         priceByProductId.set(productId, asNumber(row.precio_sugerido, 0))
       }
     }

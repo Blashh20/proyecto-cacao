@@ -85,6 +85,37 @@ function buildCatalog(
   })
 }
 
+function getRegionName(region?: DictionaryRow): string {
+  return asString(
+    region?.nombre_region ??
+      region?.nombre ??
+      region?.region ??
+      region?.departamento ??
+      region?.descripcion,
+    ""
+  )
+}
+
+function locationRegion(params: {
+  idEmpresa: string
+  finca?: DictionaryRow
+  point?: DictionaryRow
+  regionsByEmpresa: Map<string, DictionaryRow>
+  regionsById: Map<string, DictionaryRow>
+}): string {
+  const { idEmpresa, finca, point, regionsByEmpresa, regionsById } = params
+  const directRegion = regionsByEmpresa.get(idEmpresa)
+  const directRegionName = getRegionName(directRegion)
+  if (directRegionName) return directRegionName
+
+  const regionId = asString(finca?.id_region) || asString(point?.id_region)
+  const relatedRegion = regionsById.get(regionId)
+  const relatedRegionName = getRegionName(relatedRegion)
+  if (relatedRegionName) return relatedRegionName
+
+  return asString(point?.nombre_lugar, "Sin región")
+}
+
 function buildGallery(
   entityId: string,
   links: DictionaryRow[],
@@ -110,9 +141,11 @@ function transformEmpresaToProject(params: {
   impacto?: DictionaryRow
   catalog: CatalogProduct[]
   gallery: ProjectGalleryImage[]
+  regionsByEmpresa: Map<string, DictionaryRow>
+  regionsById: Map<string, DictionaryRow>
   index: number
 }): Project {
-  const { empresa, point, finca, impacto, catalog, gallery, index } = params
+  const { empresa, point, finca, impacto, catalog, gallery, regionsByEmpresa, regionsById, index } = params
   const idEmpresa = asString(empresa.id_empresa, `empresa-${index}`)
   const coordinates = getPointCoordinates(point)
 
@@ -122,7 +155,13 @@ function transformEmpresaToProject(params: {
     name: asString(empresa.nombre_comercial, "Empresa sin nombre"),
     nit: asString(empresa.nit),
     status: asString(empresa.estado_servicio, "Activo"),
-    location: asString(point?.nombre_lugar, "Sin ubicación"),
+    location: locationRegion({
+      idEmpresa,
+      finca,
+      point,
+      regionsByEmpresa,
+      regionsById,
+    }),
     coordinates,
     localType: asString(point?.tipo_punto, "Finca"),
     phone: "",
@@ -149,18 +188,21 @@ function transformEmpresaToProject(params: {
 }
 
 export async function fetchProjects(): Promise<Project[]> {
-  const [empresas, puntos, fincas, impactos, catalogo, productos, vinculos, fotos] = await Promise.all([
+  const [empresas, regiones, puntos, fincas, impactos, catalogo, productos, vinculos, fotos] = await Promise.all([
     selectFirstAvailableTable(DICTIONARY_TABLES.empresa, "id_empresa, nombre_comercial, nit, estado_servicio, id_usuario, id_punto_geografico, fecha_creacion"),
+    selectFirstAvailableTable(DICTIONARY_TABLES.regiones, "*"),
     selectFirstAvailableTable(DICTIONARY_TABLES.puntosGeograficos, "id_punto_geografico, nombre_lugar, latitud, longitud, tipo_punto, id_region"),
     selectFirstAvailableTable(DICTIONARY_TABLES.fincas, "id_finca, id_empresa, id_region, nombre_finca, area_hectareas, geometria_poligono, cumple_norma_ue, analisis_dofa, fecha_creacion"),
     selectFirstAvailableTable(DICTIONARY_TABLES.impactoSostenibilidad, "id_impacto, id_finca, hectareas_conservadas, empleos_comunitarios, indice_regeneracion, fecha_creacion"),
     selectFirstAvailableTable(DICTIONARY_TABLES.catalogoEmpresa, "id_catalogo, id_empresa, id_producto, precio_sugerido, costo_produccion, fecha_creacion"),
     selectFirstAvailableTable(DICTIONARY_TABLES.productosDerivados, "id_producto, nombre_derivado, categoria, descripcion_tecnica, fecha_creacion"),
-    selectFirstAvailableTable(DICTIONARY_TABLES.vinculoGaleria, "id_vinculo, id_foto, entidad_tipo, id_empresa"),
+    selectFirstAvailableTable(DICTIONARY_TABLES.vinculoGaleria, "id_vinculo, id_foto, entidad_tipo"),
     selectFirstAvailableTable(DICTIONARY_TABLES.galeriaFotos, "id_foto, url_foto, titulo, descripcion, fecha_creacion"),
   ])
 
-  const puntosById = mapBy(puntos, "id_punto")
+  const regionsByEmpresa = mapBy(regiones, "id_empresa")
+  const regionsById = mapBy(regiones, "id_region")
+  const puntosById = mapBy(puntos, "id_punto_geografico")
   const fincasByEmpresa = groupBy(fincas, "id_empresa")
   const impactosByFinca = groupBy(impactos, "id_finca")
   const catalogByEmpresa = groupBy(catalogo, "id_empresa")
@@ -181,6 +223,8 @@ export async function fetchProjects(): Promise<Project[]> {
       impacto,
       catalog,
       gallery,
+      regionsByEmpresa,
+      regionsById,
       index,
     })
   })

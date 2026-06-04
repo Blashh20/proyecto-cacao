@@ -79,47 +79,49 @@ export function ProjectsMapSection() {
               Puntos de desarrollo
             </h3>
 
-            {projects.map((project) => (
-              <button
-                key={project.id}
-                onClick={() => setSelectedProject(project)}
-                onMouseEnter={() => setHoveredProject(project.id)}
-                onMouseLeave={() => setHoveredProject(null)}
-                className={cn(
-                  "w-full rounded-xl border p-4 text-left transition-all duration-300",
-                  selectedProject?.id === project.id
-                    ? "border-forest bg-forest/10"
-                    : hoveredProject === project.id
-                      ? "border-forest/50 bg-forest/5"
-                      : "border-border hover:border-forest/30"
-                )}
-              >
-                <div className="flex items-start gap-3">
-                  <div
-                    className={cn(
-                      "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors",
-                      selectedProject?.id === project.id ? "bg-forest text-white" : "bg-forest/20 text-forest"
-                    )}
-                  >
-                    <MapPin size={18} />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-foreground">{project.name}</h4>
-                    <p className="text-sm text-muted-foreground">{project.location}</p>
-                    <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Leaf size={12} className="text-forest" />
-                        {project.hectares} ha
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Users size={12} className="text-forest" />
-                        {project.families} familias
-                      </span>
+            <div className="max-h-[520px] space-y-3 overflow-y-auto pr-2">
+              {projects.map((project) => (
+                <button
+                  key={project.id}
+                  onClick={() => setSelectedProject(project)}
+                  onMouseEnter={() => setHoveredProject(project.id)}
+                  onMouseLeave={() => setHoveredProject(null)}
+                  className={cn(
+                    "w-full rounded-xl border p-4 text-left transition-all duration-300",
+                    selectedProject?.id === project.id
+                      ? "border-forest bg-forest/10"
+                      : hoveredProject === project.id
+                        ? "border-forest/50 bg-forest/5"
+                        : "border-border hover:border-forest/30"
+                  )}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={cn(
+                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors",
+                        selectedProject?.id === project.id ? "bg-forest text-white" : "bg-forest/20 text-forest"
+                      )}
+                    >
+                      <MapPin size={18} />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-foreground">{project.name}</h4>
+                      <p className="text-sm text-muted-foreground">{project.location}</p>
+                      <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Leaf size={12} className="text-forest" />
+                          {project.hectares} ha
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Users size={12} className="text-forest" />
+                          {project.families} familias
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="order-1 lg:order-2 lg:col-span-3">
@@ -145,9 +147,8 @@ export function ProjectsMapSection() {
               {getProjectGallery(selectedProject).length > 0 ? (
                 <>
                   <div className="relative h-56 overflow-hidden sm:h-64">
-                    <img
-                      src={getProjectGallery(selectedProject)[selectedGalleryImage].src || "/images/simbolo.png"}
-                      alt={getProjectGallery(selectedProject)[selectedGalleryImage].alt}
+                    <img 
+                    src={getProjectGallery(selectedProject)[selectedGalleryImage].src || "/images/simbolo.png"}
                       className="h-full w-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
@@ -180,7 +181,7 @@ export function ProjectsMapSection() {
                 </>
               ) : (
               <div className="relative h-48 overflow-hidden">
-                <img src={selectedProject.image || "/images/simbolo.png"} alt={selectedProject.name} className="h-full w-full object-cover" />
+                <img src={selectedProject.image} alt={selectedProject.name} className="h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
                 <button
                   onClick={() => setSelectedProject(null)}
