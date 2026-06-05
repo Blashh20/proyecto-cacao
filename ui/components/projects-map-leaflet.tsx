@@ -70,7 +70,7 @@ export function ProjectsMapLeaflet({
     <MapContainer
       center={MAP_CENTER}
       zoom={MAP_ZOOM}
-      className="z-0 h-[500px] w-full rounded-2xl"
+      className="z-0 h-[320px] w-full rounded-2xl sm:h-[380px] lg:h-[440px]"
       scrollWheelZoom
       touchZoom
       doubleClickZoom

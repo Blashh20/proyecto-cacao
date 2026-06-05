@@ -53,7 +53,7 @@ export function AboutSection() {
     <section
       id="nosotros"
       ref={sectionRef}
-      className="py-24 md:py-32 relative overflow-hidden"
+      className="relative overflow-hidden py-14 sm:py-16 lg:py-20"
     >
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5">
@@ -61,9 +61,9 @@ export function AboutSection() {
         <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full bg-chocolate blur-3xl" />
       </div>
 
-      <div className="container mx-auto px-6 relative z-10">
+      <div className="container relative z-10 mx-auto px-4 sm:px-6">
         {/* Section Header */}
-        <div className="text-center mb-16">
+        <div className="mb-10 text-center lg:mb-12">
           <span 
             className={cn(
               "inline-block text-forest-light text-sm tracking-[0.3em] uppercase mb-4 transition-all duration-700",
@@ -74,7 +74,7 @@ export function AboutSection() {
           </span>
           <h2 
             className={cn(
-              "text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-cream mb-6 transition-all duration-700 delay-100",
+              "mb-4 text-3xl font-serif font-bold text-cream transition-all duration-700 delay-100 sm:text-4xl lg:text-5xl",
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             )}
           >
@@ -84,7 +84,7 @@ export function AboutSection() {
           </h2>
           <p 
             className={cn(
-              "text-cream/60 max-w-2xl mx-auto text-lg leading-relaxed transition-all duration-700 delay-200",
+              "mx-auto max-w-2xl text-base leading-relaxed text-cream/60 transition-all duration-700 delay-200 sm:text-lg",
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             )}
           >
@@ -94,7 +94,7 @@ export function AboutSection() {
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center mb-20">
+        <div className="mb-12 grid items-center gap-10 lg:mb-14 lg:grid-cols-2 lg:gap-14">
           {/* Image Column */}
           <div 
             className={cn(
@@ -113,7 +113,7 @@ export function AboutSection() {
             </div>
             
             {/* Floating Card */}
-            <div className="absolute -bottom-6 -right-6 md:right-6 bg-card p-6 rounded-xl border border-border shadow-2xl max-w-xs">
+            <div className="absolute -bottom-5 right-3 max-w-[min(20rem,85%)] rounded-xl border border-border bg-card p-4 shadow-2xl sm:-right-4 sm:p-5 md:right-6">
               <div className="flex items-center gap-4 mb-3">
                 <div className="w-12 h-12 rounded-full bg-forest/20 flex items-center justify-center">
                   <TreePine className="w-6 h-6 text-forest-light" />
@@ -137,15 +137,15 @@ export function AboutSection() {
             )}
           >
             <div className="space-y-6">
-              <p className="text-cream/80 text-lg leading-relaxed">
+              <p className="text-base leading-relaxed text-cream/80 sm:text-lg">
                 La Sierra Nevada de Santa Marta, una majestuosa cordillera costera en el norte de Colombia, es el hogar ancestral de nuestro cacao. Esta región única, con sus altitudes que van desde el nivel del mar hasta picos de más de 5.700 metros, crea microclimas perfectos para el cultivo de cacao fino de aroma. Sus suelos volcánicos fértiles y la humedad constante de la selva tropical producen granos excepcionales, ricos en sabor y aroma.
               </p>
-              <p className="text-cream/80 text-lg leading-relaxed">
+              <p className="text-base leading-relaxed text-cream/80 sm:text-lg">
                 Hoy, su legado continúa. Trabajamos mano a mano con comunidades indígenas 
                 y campesinas, preservando sus conocimientos ancestrales mientras les ofrecemos 
                 oportunidades de desarrollo sostenible.
               </p>
-              <p className="text-cream/80 text-lg leading-relaxed">
+              <p className="text-base leading-relaxed text-cream/80 sm:text-lg">
                 Cada grano de cacao que producimos cuenta una historia de <strong className="text-forest-light">pasión, 
                 dedicación y respeto</strong> por nuestra tierra colombiana.
               </p>
@@ -164,17 +164,17 @@ export function AboutSection() {
         </div>
 
         {/* Features Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
           {features.map((feature, index) => (
             <div
               key={index}
               className={cn(
-                "bg-card/50 backdrop-blur-sm border border-border rounded-xl p-6 hover:border-forest/50 transition-all duration-500 group",
+                "group rounded-xl border border-border bg-card/50 p-4 backdrop-blur-sm transition-all duration-500 hover:border-forest/50 sm:p-5",
                 isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
               )}
               style={{ transitionDelay: `${600 + index * 100}ms` }}
             >
-              <div className="w-14 h-14 rounded-xl bg-forest/10 flex items-center justify-center mb-4 group-hover:bg-forest/20 transition-colors">
+              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-forest/10 transition-colors group-hover:bg-forest/20">
                 <feature.icon className="w-7 h-7 text-forest-light" />
               </div>
               <h3 className="text-lg font-semibold text-cream mb-2">

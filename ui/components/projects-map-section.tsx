@@ -29,7 +29,7 @@ function MapComponent({
 
   if (!isClient) {
     return (
-      <div className="flex h-[500px] w-full items-center justify-center rounded-2xl bg-forest/10">
+      <div className="flex h-[320px] w-full items-center justify-center rounded-2xl bg-forest/10 sm:h-[380px] lg:h-[440px]">
         <div className="text-center">
           <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-forest border-t-transparent" />
           <p className="text-muted-foreground">Cargando mapa...</p>
@@ -54,20 +54,20 @@ export function ProjectsMapSection() {
   }, [selectedProject?.id])
 
   return (
-    <section id="proyectos" className="relative overflow-hidden bg-card py-24">
+    <section id="proyectos" className="relative overflow-hidden bg-card py-14 sm:py-16 lg:py-20">
       <div className="absolute inset-0 opacity-5">
         <div className="absolute left-10 top-20 h-64 w-64 rounded-full border border-forest" />
         <div className="absolute bottom-20 right-10 h-96 w-96 rounded-full border border-forest" />
       </div>
 
-      <div className="container relative z-10 mx-auto px-6">
-        <div className="mb-16 text-center">
+      <div className="container relative z-10 mx-auto px-4 sm:px-6">
+        <div className="mb-10 text-center lg:mb-12">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-forest/10 px-4 py-2 text-forest">
             <Mountain size={18} />
             <span className="text-sm font-medium uppercase tracking-wider">Territorios de origen</span>
           </div>
-          <h2 className="mb-6 text-4xl font-serif font-bold text-foreground md:text-5xl">Proyectos y territorios</h2>
-          <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
+          <h2 className="mb-4 text-3xl font-serif font-bold text-foreground sm:text-4xl lg:text-5xl">Proyectos y territorios</h2>
+          <p className="mx-auto max-w-2xl text-base text-muted-foreground sm:text-lg">
             Explora los proyectos que Makakaw articula junto a productores y aliados en cafe y cacao para fortalecer origen, calidad y desarrollo rural.
           </p>
         </div>
@@ -79,7 +79,7 @@ export function ProjectsMapSection() {
               Puntos de desarrollo
             </h3>
 
-            <div className="max-h-[520px] space-y-3 overflow-y-auto pr-2">
+            <div className="max-h-[360px] space-y-3 overflow-y-auto pr-2 sm:max-h-[420px] lg:max-h-[480px]">
               {projects.map((project) => (
                 <button
                   key={project.id}
@@ -87,7 +87,7 @@ export function ProjectsMapSection() {
                   onMouseEnter={() => setHoveredProject(project.id)}
                   onMouseLeave={() => setHoveredProject(null)}
                   className={cn(
-                    "w-full rounded-xl border p-4 text-left transition-all duration-300",
+                    "w-full rounded-xl border p-3 text-left transition-all duration-300 sm:p-4",
                     selectedProject?.id === project.id
                       ? "border-forest bg-forest/10"
                       : hoveredProject === project.id
@@ -125,8 +125,8 @@ export function ProjectsMapSection() {
           </div>
 
           <div className="order-1 lg:order-2 lg:col-span-3">
-            <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-forest/5 to-forest/10 p-4">
-              <div className="absolute left-8 top-8 z-[1000] rounded-lg border border-border bg-background/95 px-4 py-2 shadow-lg backdrop-blur-sm">
+            <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-forest/5 to-forest/10 p-3 sm:p-4">
+              <div className="absolute left-4 top-4 z-[1000] rounded-lg border border-border bg-background/95 px-3 py-2 shadow-lg backdrop-blur-sm sm:left-8 sm:top-8 sm:px-4">
                 <p className="text-sm font-medium text-foreground">Makakaw en Colombia</p>
                 <p className="text-xs text-muted-foreground">Mapa interactivo de proyectos</p>
               </div>

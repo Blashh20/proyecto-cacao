@@ -141,7 +141,7 @@ Resultado:
 Solicitud: Analizar rápido el proyecto y adaptar módulos a JSON real de Supabase.
 Consultas realizadas a Supabase (confirmación de esquema real):
 - rpc detalle_completo_empresas_mapa -> devuelve [{ datos_empresa: { id_empresa, nombre, nit, estado, puntos_distribucion[], catalogo_productos[] } }]
-- rpc obtener_productos -> devuelve [{ id_producto, fecha_creacion, nombre_derivado, descripcion_tecnica, categoria, id_galeria_foto }]
+- rpc obtener_productos -> devuelve [{ id_producto, fecha_creacion, nombre_derivado, descripcion, categoria, id_galeria_foto }]
 - rpc de turismo intentados (obtener_puntos_de_ruta, obtener_puntos_ruta, get_route_points, get_tourism_data) -> 404.
 Archivos adaptados:
 - model/projects.ts
@@ -155,7 +155,7 @@ Archivos adaptados:
 - controller/products-controller.ts
   * Mapeo robusto de obtener_productos a ProductItem esperado por UI.
 - controller/admin-products-panel-controller.ts
-  * Insert adaptado a columnas reales: nombre_derivado, descripcion_tecnica, categoria.
+  * Insert adaptado a columnas reales: nombre_derivado, descripcion, categoria.
 - ui/components/admin-products-panel.tsx
   * Reescrito para usar el controller y evitar referencias rotas/variables no definidas.
 - ui/components/products-section.tsx

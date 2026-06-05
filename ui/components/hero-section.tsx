@@ -42,7 +42,7 @@ export function HeroSection() {
   }, [])
 
   return (
-    <section id="inicio" className="relative flex min-h-screen items-center justify-center overflow-hidden">
+    <section id="inicio" className="relative flex min-h-[calc(100svh-72px)] items-center justify-center overflow-hidden">
       <div className="absolute inset-0 z-0" style={{ transform: `translateY(${scrollY * 0.5}px)` }}>
         <Image
           src="/images/hero-jungle.jpg"
@@ -70,11 +70,11 @@ export function HeroSection() {
         ))}
       </div>
 
-      <div className="relative z-20 container mx-auto px-4 pb-16 pt-28 sm:px-6 sm:pb-20 sm:pt-32">
+      <div className="relative z-20 container mx-auto px-4 pb-12 pt-24 sm:px-6 sm:pb-16 sm:pt-28 lg:pb-20 lg:pt-32">
         <div className="mx-auto max-w-6xl text-center">
           <div
             className={cn(
-              "mb-8 inline-flex items-center gap-2 rounded-full border border-forest/50 bg-forest/10 px-4 py-2 backdrop-blur-sm transition-all duration-1000",
+              "mb-5 inline-flex items-center gap-2 rounded-full border border-forest/50 bg-forest/10 px-3 py-2 backdrop-blur-sm transition-all duration-1000 sm:mb-6 sm:px-4",
               isLoaded ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
             )}
           >
@@ -86,7 +86,7 @@ export function HeroSection() {
 
           <h1
             className={cn(
-              "mb-6 text-4xl font-serif font-bold leading-[0.95] text-cream transition-all duration-1000 delay-200 sm:text-5xl md:text-7xl lg:text-8xl",
+              "mb-5 text-[clamp(2.4rem,8vw,5.5rem)] font-serif font-bold leading-[0.95] text-cream transition-all duration-1000 delay-200",
               isLoaded ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
             )}
           >
@@ -97,7 +97,7 @@ export function HeroSection() {
 
           <p
             className={cn(
-              "mx-auto mb-10 max-w-3xl text-base font-light leading-relaxed text-cream/70 transition-all duration-1000 delay-400 sm:text-lg md:mb-12 md:text-2xl",
+              "mx-auto mb-7 max-w-3xl text-sm font-light leading-relaxed text-cream/70 transition-all duration-1000 delay-400 sm:text-base md:mb-9 md:text-xl",
               isLoaded ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
             )}
           >
@@ -107,19 +107,19 @@ export function HeroSection() {
 
           <div
             className={cn(
-              "mb-14 flex flex-col items-stretch justify-center gap-3 transition-all duration-1000 delay-500 sm:flex-row sm:items-center md:mb-16",
+              "mb-9 flex flex-col items-stretch justify-center gap-3 transition-all duration-1000 delay-500 sm:flex-row sm:items-center md:mb-11",
               isLoaded ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
             )}
           >
             <a
               href="#productos"
-              className="rounded-full bg-forest px-6 py-4 text-center text-sm font-medium uppercase tracking-wider text-cream transition-all hover:scale-105 hover:bg-forest-light hover:shadow-lg hover:shadow-forest/30 sm:px-8"
+              className="rounded-full bg-forest px-5 py-3 text-center text-xs font-medium uppercase tracking-wider text-cream transition-all hover:scale-105 hover:bg-forest-light hover:shadow-lg hover:shadow-forest/30 sm:px-7 sm:text-sm"
             >
               Ver Portafolio
             </a>
             <a
               href="#nosotros"
-              className="rounded-full border border-cream/30 px-6 py-4 text-center text-sm font-medium uppercase tracking-wider text-cream transition-all hover:border-forest hover:text-forest-light sm:px-8"
+              className="rounded-full border border-cream/30 px-5 py-3 text-center text-xs font-medium uppercase tracking-wider text-cream transition-all hover:border-forest hover:text-forest-light sm:px-7 sm:text-sm"
             >
               Conocer Makakaw
             </a>
@@ -134,12 +134,12 @@ export function HeroSection() {
             {stats.map((stat, index) => (
               <div
                 key={index}
-                className="group rounded-2xl border border-cream/10 bg-background/30 px-4 py-5 text-center backdrop-blur-sm"
+                className="group rounded-2xl border border-cream/10 bg-background/30 px-3 py-4 text-center backdrop-blur-sm sm:px-4"
               >
-                <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-forest/20 transition-colors group-hover:bg-forest/30">
+                <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-forest/20 transition-colors group-hover:bg-forest/30">
                   <stat.icon className="h-5 w-5 text-forest-light" />
                 </div>
-                <div className="mb-1 text-xl font-bold text-cream sm:text-2xl md:text-3xl">{stat.value}</div>
+                <div className="mb-1 text-lg font-bold text-cream sm:text-xl md:text-2xl">{stat.value}</div>
                 <div className="text-[10px] uppercase tracking-[0.2em] text-cream/60 sm:text-xs">{stat.label}</div>
               </div>
             ))}
@@ -172,4 +172,3 @@ export function HeroSection() {
     </section>
   )
 }
-

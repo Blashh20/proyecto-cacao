@@ -27,7 +27,7 @@ export function useAdminProductsPanelController() {
     const payload = {
       id_producto: `prod-${Date.now()}`,
       nombre_derivado: form.nombre_derivado.trim(),
-      descripcion_tecnica: form.descripcion.trim() || null,
+      descripcion: form.descripcion.trim() || null,
       categoria: form.tag.trim() || "Alimento",
     }
 

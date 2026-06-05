@@ -269,7 +269,7 @@ export function AdminProjectsPanel() {
   }
 
   return (
-    <section id="admin" className="border-y border-border bg-background py-24">
+    <section id="admin" className="border-y border-border bg-background py-14 sm:py-16 lg:py-20">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="mx-auto max-w-7xl">
           <div className="mb-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -402,12 +402,12 @@ export function AdminProjectsPanel() {
 
           {activeSection === "proyectos" ? (
             <div className="space-y-8" id="admin-form">
-              <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-forest/5 to-forest/10 p-4">
-                <div className="absolute left-8 top-8 z-[100] rounded-lg border border-border bg-background/95 px-4 py-2 shadow-lg backdrop-blur-sm">
+              <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-forest/5 to-forest/10 p-3 sm:p-4">
+                <div className="absolute left-4 top-4 z-[100] rounded-lg border border-border bg-background/95 px-3 py-2 shadow-lg backdrop-blur-sm sm:left-8 sm:top-8 sm:px-4">
                   <p className="text-sm font-medium text-foreground">Mapa interactivo de gestión</p>
                   <p className="text-xs text-muted-foreground">Haz clic en el mapa para agregar punto o selecciona un pin para editar</p>
                 </div>
-                <div className="h-[400px] w-full relative z-0">
+                <div className="relative z-0 h-[300px] w-full sm:h-[360px] lg:h-[400px]">
                   <AdminMapLeaflet
                     projects={projects}
                     selectedProjectId={form.id}
@@ -418,8 +418,8 @@ export function AdminProjectsPanel() {
                 </div>
               </div>
 
-              <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-                <form onSubmit={handleSubmit} className="space-y-6 rounded-3xl border border-border bg-card p-6 md:p-8">
+              <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+                <form onSubmit={handleSubmit} className="space-y-5 rounded-2xl border border-border bg-card p-4 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <PlusCircle className="text-forest" size={24} />
@@ -544,9 +544,9 @@ export function AdminProjectsPanel() {
                   icon={<Sprout size={20} className="text-forest" />}
                   description="Revision rapida de los proyectos registrados."
                 >
-                  <div className="max-h-[560px] space-y-4 overflow-y-auto pr-2">
+                  <div className="max-h-[380px] space-y-3 overflow-y-auto pr-2 sm:max-h-[460px] lg:max-h-[520px]">
                     {projects.slice().reverse().map((project) => (
-                      <article key={project.id} className="rounded-2xl border border-border bg-background p-4 cursor-pointer hover:border-forest/50 transition-colors" onClick={() => handleProjectSelect(project)}>
+                      <article key={project.id} className="cursor-pointer rounded-2xl border border-border bg-background p-3 transition-colors hover:border-forest/50 sm:p-4" onClick={() => handleProjectSelect(project)}>
                         <div className="flex items-start justify-between gap-4">
                           <div>
                             <h4 className="font-semibold text-foreground">{project.name}</h4>
@@ -654,7 +654,7 @@ function DashboardCard({
   className?: string
 }) {
   return (
-    <section className={`rounded-3xl border border-border bg-card p-6 md:p-8 ${className}`}>
+    <section className={`rounded-2xl border border-border bg-card p-4 sm:p-6 ${className}`}>
       <div className="mb-6 flex items-center gap-3">
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-forest/10">{icon}</div>
         <div>

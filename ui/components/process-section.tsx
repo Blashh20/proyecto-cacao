@@ -59,14 +59,14 @@ export function ProcessSection() {
   }, [])
 
   return (
-    <section id="proceso" ref={sectionRef} className="relative overflow-hidden bg-card/30 py-24 md:py-32">
+    <section id="proceso" ref={sectionRef} className="relative overflow-hidden bg-card/30 py-14 sm:py-16 lg:py-20">
       <div className="absolute inset-0">
         <div className="absolute -left-48 top-1/4 h-96 w-96 rounded-full bg-forest/5 blur-3xl" />
         <div className="absolute -right-48 bottom-1/4 h-96 w-96 rounded-full bg-chocolate/5 blur-3xl" />
       </div>
 
-      <div className="container relative z-10 mx-auto px-6">
-        <div className="mb-16 text-center lg:mb-24">
+      <div className="container relative z-10 mx-auto px-4 sm:px-6">
+        <div className="mb-10 text-center lg:mb-14">
           <span
             className={cn(
               "mb-4 inline-block text-sm uppercase tracking-[0.3em] text-forest-light transition-all duration-700",
@@ -77,7 +77,7 @@ export function ProcessSection() {
           </span>
           <h2
             className={cn(
-              "mb-6 text-4xl font-serif font-bold text-cream transition-all duration-700 delay-100 md:text-5xl lg:text-6xl",
+              "mb-4 text-3xl font-serif font-bold text-cream transition-all duration-700 delay-100 sm:text-4xl lg:text-5xl",
               isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
             )}
           >
@@ -87,7 +87,7 @@ export function ProcessSection() {
           </h2>
           <p
             className={cn(
-              "mx-auto max-w-2xl text-lg leading-relaxed text-cream/60 transition-all duration-700 delay-200",
+              "mx-auto max-w-2xl text-base leading-relaxed text-cream/60 transition-all duration-700 delay-200 sm:text-lg",
               isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
             )}
           >
@@ -95,14 +95,14 @@ export function ProcessSection() {
           </p>
         </div>
 
-        <div className="hidden items-start gap-10 lg:grid lg:grid-cols-2">
+        <div className="hidden items-start gap-8 lg:grid lg:grid-cols-2">
           <div className="sticky top-32 space-y-4">
             {processSteps.map((step, index) => (
               <button
                 key={index}
                 onClick={() => setActiveStep(index)}
                 className={cn(
-                  "group w-full rounded-xl border p-6 text-left transition-all duration-500",
+                  "group w-full rounded-xl border p-5 text-left transition-all duration-500",
                   activeStep === index ? "border-forest bg-forest/10" : "border-border bg-card/30 hover:border-forest/50"
                 )}
               >
@@ -159,7 +159,7 @@ export function ProcessSection() {
           </div>
         </div>
 
-        <div className="space-y-12 lg:hidden">
+        <div className="space-y-8 lg:hidden">
           {processSteps.map((step, index) => (
             <div
               key={index}
@@ -169,14 +169,14 @@ export function ProcessSection() {
               )}
               style={{ transitionDelay: `${300 + index * 150}ms` }}
             >
-              <div className="relative mb-6 aspect-video overflow-hidden rounded-xl">
+              <div className="relative mb-4 aspect-video overflow-hidden rounded-xl">
                 <Image src={step.image} alt={step.title} fill className="object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
                 <span className="absolute bottom-4 left-4 text-5xl font-serif font-bold text-forest-light opacity-50">
                   {step.number}
                 </span>
               </div>
-              <h3 className="mb-3 text-2xl font-semibold text-cream">{step.title}</h3>
+              <h3 className="mb-2 text-xl font-semibold text-cream sm:text-2xl">{step.title}</h3>
               <p className="leading-relaxed text-cream/60">{step.description}</p>
             </div>
           ))}

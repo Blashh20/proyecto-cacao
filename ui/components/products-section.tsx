@@ -11,7 +11,6 @@ export function ProductsSection() {
   const [isVisible, setIsVisible] = useState(false);
   const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
   const { products } = useProducts();
-  console.log(products);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -33,10 +32,10 @@ export function ProductsSection() {
     <section
       id="productos"
       ref={sectionRef}
-      className="relative overflow-hidden py-20 md:py-32"
+      className="relative overflow-hidden py-14 sm:py-16 lg:py-20"
     >
       <div className="container relative z-10 mx-auto px-4 sm:px-6">
-        <div className="mb-14 flex flex-col gap-6 md:mb-16 md:flex-row md:items-end md:justify-between">
+        <div className="mb-10 flex flex-col gap-5 md:mb-12 md:flex-row md:items-end md:justify-between">
           <div>
             <span
               className={cn(
@@ -50,7 +49,7 @@ export function ProductsSection() {
             </span>
             <h2
               className={cn(
-                "text-3xl font-serif font-bold text-cream transition-all duration-700 delay-100 sm:text-4xl md:text-5xl lg:text-6xl",
+                "text-3xl font-serif font-bold text-cream transition-all duration-700 delay-100 sm:text-4xl lg:text-5xl",
                 isVisible
                   ? "translate-y-0 opacity-100"
                   : "translate-y-8 opacity-0",
@@ -80,7 +79,7 @@ export function ProductsSection() {
           </a>
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 md:gap-6">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
           {products.length > 0 ? (
             products.map((product, index) => (
               <div
@@ -98,7 +97,7 @@ export function ProductsSection() {
                 <div className="overflow-hidden rounded-2xl border border-border bg-card transition-all duration-500 hover:border-forest/50">
                   <div className="relative aspect-square overflow-hidden">
                     <img
-                      src={product.imagen_url || "/images/cacao-beans.jpg"}
+                      src={product.imagen_url}
                       alt={product.nombre_derivado}
                       loading="lazy"
                       decoding="async"
@@ -153,7 +152,7 @@ export function ProductsSection() {
                         {new Intl.NumberFormat("es-CO").format(product.precio ?? 0)}
                       </span>
                       <span className="text-xs uppercase tracking-wider text-cream/40">
-                        COP
+                        COP/UNIDAD
                       </span>
                     </div>
                   </div>

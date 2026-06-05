@@ -64,7 +64,7 @@ export function LoginModal({ isOpen, onClose, onSwitchToRegister, onLogin, onLog
       <div className="relative mx-4 w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-300">
         <div className="h-2 bg-gradient-to-r from-forest via-forest-light to-forest" />
 
-        <div className="p-8">
+        <div className="p-5 sm:p-6">
           <button
             onClick={onClose}
             className="absolute right-4 top-4 text-muted-foreground transition-colors hover:text-foreground"
@@ -72,20 +72,20 @@ export function LoginModal({ isOpen, onClose, onSwitchToRegister, onLogin, onLog
             <X size={24} />
           </button>
 
-          <div className="mb-8 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-forest/20">
-              <LogIn className="h-8 w-8 text-forest" />
+          <div className="mb-6 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-forest/20">
+              <LogIn className="h-7 w-7 text-forest" />
             </div>
             <h2 className="text-2xl font-serif font-bold text-foreground">Iniciar Sesion</h2>
             <p className="mt-2 text-muted-foreground">Bienvenido de vuelta a Makakaw</p>
           </div>
 
-          <div className="mb-6 flex gap-3">
+          <div className="mb-5 flex gap-3">
             <button
               type="button"
               onClick={() => setRole("user")}
               className={cn(
-                "flex flex-1 items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 transition-all duration-300",
+                "flex flex-1 items-center justify-center gap-2 rounded-xl border-2 px-3 py-2.5 transition-all duration-300 sm:px-4",
                 role === "user"
                   ? "border-forest bg-forest/10 text-forest"
                   : "border-border text-muted-foreground hover:border-forest/50"
@@ -98,7 +98,7 @@ export function LoginModal({ isOpen, onClose, onSwitchToRegister, onLogin, onLog
               type="button"
               onClick={() => setRole("admin")}
               className={cn(
-                "flex flex-1 items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 transition-all duration-300",
+                "flex flex-1 items-center justify-center gap-2 rounded-xl border-2 px-3 py-2.5 transition-all duration-300 sm:px-4",
                 role === "admin"
                   ? "border-forest bg-forest/10 text-forest"
                   : "border-border text-muted-foreground hover:border-forest/50"
@@ -109,7 +109,7 @@ export function LoginModal({ isOpen, onClose, onSwitchToRegister, onLogin, onLog
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 gap-3">
               <button
                 type="button"
@@ -212,4 +212,3 @@ function GoogleIcon() {
     </svg>
   )
 }
-

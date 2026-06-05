@@ -8,7 +8,6 @@ export interface ProductItem {
   categoria?: string
   fecha_creacion?: string
   id_galeria_foto?: string | null
-  descripcion_tecnica?: string | null
   precio?: number | null
 }
 

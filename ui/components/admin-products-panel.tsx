@@ -16,9 +16,9 @@ export function AdminProductsPanel() {
   }
 
   return (
-    <section id="admin-productos" className="border-y border-border bg-background py-20">
+    <section id="admin-productos" className="border-y border-border bg-background py-14 sm:py-16 lg:py-20">
       <div className="container mx-auto px-4 sm:px-6">
-        <div className="mx-auto max-w-4xl rounded-3xl border border-border bg-card p-6 md:p-8">
+        <div className="mx-auto max-w-4xl rounded-2xl border border-border bg-card p-4 sm:p-6">
           <div className="mb-6">
             <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-forest/10 px-4 py-2 text-forest">
               <ShieldCheck size={18} />

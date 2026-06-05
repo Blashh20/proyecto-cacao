@@ -131,13 +131,13 @@ export default function PerfilPage() {
   }, [profileForm])
 
   if (isLoading || loadingData) {
-    return <main className="min-h-screen bg-background px-4 py-24 text-foreground">Cargando dashboard...</main>
+    return <main className="min-h-screen bg-background px-4 py-14 text-foreground sm:py-16 lg:py-20">Cargando dashboard...</main>
   }
 
   if (!isAuthenticated || !user) {
     return (
-      <main className="min-h-screen bg-background px-4 py-24 text-foreground">
-        <div className="mx-auto max-w-4xl rounded-3xl border border-border bg-card p-8">
+      <main className="min-h-screen bg-background px-4 py-14 text-foreground sm:py-16 lg:py-20">
+        <div className="mx-auto max-w-4xl rounded-2xl border border-border bg-card p-4 sm:p-6">
           <h1 className="text-2xl font-bold">Debes iniciar sesion</h1>
           <p className="mt-2 text-muted-foreground">Accede con tu cuenta para ver el dashboard de perfil.</p>
           <Link href="/" className="mt-6 inline-flex items-center gap-2 text-forest hover:underline">
@@ -224,7 +224,7 @@ export default function PerfilPage() {
   }
 
   return (
-    <main className="min-h-screen py-12">
+    <main className="min-h-screen px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
       <div className="mx-auto max-w-6xl">
         <Link href="/" className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft size={16} />
