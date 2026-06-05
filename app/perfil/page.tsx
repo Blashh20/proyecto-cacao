@@ -5,7 +5,17 @@ import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "re
 import { ArrowLeft } from "lucide-react"
 
 import { useAuth } from "@/controller/auth-controller"
-import { supabase } from "@/services/client"
+import {
+  getPaymentSettings,
+  getProfile,
+  getPurchases,
+  parsePaymentMethods,
+  savePaymentSettings,
+  updateAuthPassword,
+  updateAuthProfile,
+  upsertInUsuarioTables,
+} from "@/controller/profile-controller"
+import type { PaymentMethodItem, PaymentSettings, PurchaseRow, Tab, UsuarioProfile } from "@/model/profile"
 import {
   ProfileHero,
   ProfileFormTab,
@@ -13,28 +23,11 @@ import {
   SecurityTab,
   SummaryTab,
   PaymentsTab,
-  type PaymentMethodItem,
-  type PaymentSettings,
-  type PurchaseRow,
-  type Tab,
 } from "@/ui/components/profile/profile-dashboard"
-
-interface UsuarioProfile {
-  tipo_identificacion: string | null
-  numero_identificacion: string | null
-  primer_nombre: string | null
-  segundo_nombre: string | null
-  primer_apellido: string | null
-  segundo_apellido: string | null
-  email: string | null
-  telefono_celular: string | null
-  rol: string | null
-  foto_perfil_url?: string | null
-}
 
 const tabs: { id: Tab; label: string }[] = [
   { id: "resumen", label: "Inicio" },
-  { id: "compras", label: "Compras" },
+  { id: "compras", label: "Ventas" },
   { id: "perfil", label: "Informacion" },
   { id: "pagos", label: "Pagos" },
   { id: "seguridad", label: "Seguridad" },
@@ -106,7 +99,7 @@ export default function PerfilPage() {
         primer_apellido: loadedProfile?.primer_apellido ?? "",
         segundo_apellido: loadedProfile?.segundo_apellido ?? "",
         tipo_identificacion: loadedProfile?.tipo_identificacion ?? "",
-        numero_identificacion: loadedProfile?.numero_identificacion ?? "",
+        numero_identificacion: loadedProfile?.id_usuario ?? "",
         telefono_celular: loadedProfile?.telefono_celular ?? "",
         foto_perfil_url: loadedProfile?.foto_perfil_url ?? "",
       })
@@ -166,31 +159,27 @@ export default function PerfilPage() {
     setError("")
 
     const payload = {
-      id: user.id,
+      id_usuario: profileForm.numero_identificacion || user.id,
       primer_nombre: profileForm.primer_nombre || null,
       segundo_nombre: profileForm.segundo_nombre || null,
       primer_apellido: profileForm.primer_apellido || null,
       segundo_apellido: profileForm.segundo_apellido || null,
       tipo_identificacion: profileForm.tipo_identificacion || null,
-      numero_identificacion: profileForm.numero_identificacion || null,
       telefono_celular: profileForm.telefono_celular || null,
       email: user.email,
-      rol: user.role,
-      foto_perfil_url: profileForm.foto_perfil_url || null,
+      rol: user.role === "admin" ? "Administrador" : "Cliente",
     }
 
     const result = await upsertInUsuarioTables(payload)
     if (!result.ok) {
-      setError("No se pudo actualizar tu perfil en Supabase. Revisa la tabla usuario/Usuarios y sus columnas.")
+      setError("No se pudo actualizar tu perfil en Supabase. Revisa la tabla Usuario y sus columnas del diccionario.")
       return
     }
 
-    await supabase.auth.updateUser({
-      data: {
-        full_name: [profileForm.primer_nombre, profileForm.primer_apellido].filter(Boolean).join(" "),
-        avatar_url: profileForm.foto_perfil_url || null,
-      },
-    })
+    await updateAuthProfile(
+      [profileForm.primer_nombre, profileForm.primer_apellido].filter(Boolean).join(" "),
+      profileForm.foto_perfil_url || null
+    )
 
     setNotice("Perfil actualizado correctamente.")
   }
@@ -200,17 +189,10 @@ export default function PerfilPage() {
     setNotice("")
     setError("")
 
-    const { error: paymentError } = await supabase.from("configuracion_pagos_usuario").upsert({
-      usuario_id: user.id,
-      metodo_preferido: paymentForm.metodo_preferido || null,
-      titular_facturacion: paymentForm.titular_facturacion || null,
-      documento_facturacion: paymentForm.documento_facturacion || null,
-      metodos_json: JSON.stringify(paymentMethods),
-      updated_at: new Date().toISOString(),
-    })
+    const { error: paymentError } = await savePaymentSettings(user.id, paymentForm, paymentMethods)
 
     if (paymentError) {
-      setError("No se pudo guardar pagos. Crea/valida la tabla configuracion_pagos_usuario en Supabase.")
+      setError("No se pudo guardar pagos. Ese módulo es auxiliar y no está en el diccionario de datos.")
       return
     }
 
@@ -231,7 +213,7 @@ export default function PerfilPage() {
       return
     }
 
-    const { error: passwordError } = await supabase.auth.updateUser({ password: securityForm.password })
+    const { error: passwordError } = await updateAuthPassword(securityForm.password)
     if (passwordError) {
       setError(`No se pudo cambiar la contrasena: ${passwordError.message}`)
       return
@@ -290,98 +272,4 @@ export default function PerfilPage() {
       </div>
     </main>
   )
-}
-
-async function getProfile(userId: string): Promise<UsuarioProfile | null> {
-  const fields =
-    "tipo_identificacion, numero_identificacion, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, email, telefono_celular, rol, foto_perfil_url"
-  const firstTry = await supabase.from("usuario").select(fields).eq("id", userId).maybeSingle<UsuarioProfile>()
-  if (firstTry.data) return firstTry.data
-
-  const secondTry = await supabase.from("Usuarios").select(fields).eq("id", userId).maybeSingle<UsuarioProfile>()
-  if (secondTry.data) return secondTry.data
-
-  return null
-}
-
-async function getPurchases(userId: string): Promise<PurchaseRow[]> {
-  const tableCandidates = ["compras", "pedidos", "orders", "ordenes"]
-  const idFields = ["usuario_id", "user_id", "id_usuario", "customer_id"]
-
-  for (const table of tableCandidates) {
-    for (const idField of idFields) {
-      const result = await supabase.from(table).select("*").eq(idField, userId).order("created_at", { ascending: false }).limit(20)
-      if (!result.error && Array.isArray(result.data)) {
-        return result.data.map((row: Record<string, unknown>, index) => ({
-          id: String(row.id ?? row.id_compra ?? row.id_pedido ?? index + 1),
-          fecha: String(row.created_at ?? row.fecha ?? row.fecha_compra ?? new Date().toISOString()),
-          total: Number(row.total ?? row.monto_total ?? row.valor_total ?? 0),
-          estado: String(row.estado ?? row.status ?? "pendiente"),
-          items: Number(row.items_count ?? row.cantidad_items ?? row.items ?? 0),
-        }))
-      }
-    }
-  }
-  return []
-}
-
-async function getPaymentSettings(userId: string): Promise<(PaymentSettings & { metodos_json?: string | null }) | null> {
-  const { data, error } = await supabase
-    .from("configuracion_pagos_usuario")
-    .select("metodo_preferido, titular_facturacion, documento_facturacion, metodos_json")
-    .eq("usuario_id", userId)
-    .maybeSingle<PaymentSettings & { metodos_json?: string | null }>()
-
-  if (error) return null
-  return data ?? null
-}
-
-function parsePaymentMethods(raw: string | null | undefined): PaymentMethodItem[] {
-  if (!raw) return []
-  try {
-    const parsed = JSON.parse(raw) as unknown
-    if (!Array.isArray(parsed)) return []
-
-    return parsed
-      .map((entry, index) => {
-        const item = entry as Partial<PaymentMethodItem>
-        const tipo = item.tipo
-        if (!tipo || !["credito", "debito", "nequi", "daviplata", "transferencia", "efectivo"].includes(tipo)) {
-          return null
-        }
-
-        return {
-          id: String(item.id ?? index + 1),
-          tipo,
-          alias: String(item.alias ?? "Metodo de pago"),
-          ultimos4: String(item.ultimos4 ?? ""),
-          principal: Boolean(item.principal),
-        } satisfies PaymentMethodItem
-      })
-      .filter((item): item is PaymentMethodItem => item !== null)
-  } catch {
-    return []
-  }
-}
-
-async function upsertInUsuarioTables(payload: {
-  id: string
-  primer_nombre: string | null
-  segundo_nombre: string | null
-  primer_apellido: string | null
-  segundo_apellido: string | null
-  tipo_identificacion: string | null
-  numero_identificacion: string | null
-  telefono_celular: string | null
-  email: string
-  rol: string
-  foto_perfil_url: string | null
-}): Promise<{ ok: boolean }> {
-  const first = await supabase.from("usuario").upsert(payload, { onConflict: "id" })
-  if (!first.error) return { ok: true }
-
-  const second = await supabase.from("Usuarios").upsert(payload, { onConflict: "id" })
-  if (!second.error) return { ok: true }
-
-  return { ok: false }
 }

@@ -56,19 +56,26 @@ export function RegisterModal({
   ];
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
-    const { name, value } = e.target;
-    const newValue =
-      name === "numero_identificacion" ? value.replace(/\D/g, "") : value;
+  e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+) => {
+  const { name, value } = e.target;
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: newValue,
-    }));
+  const numericFields = [
+    "numero_identificacion",
+    "telefono_celular",
+  ];
 
-    setError("");
-  };
+  const newValue = numericFields.includes(name)
+    ? value.replace(/\D/g, "")
+    : value;
+
+  setFormData((prev) => ({
+    ...prev,
+    [name]: newValue,
+  }));
+
+  setError("");
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -298,6 +305,7 @@ export function RegisterModal({
                     name="telefono_celular"
                     value={formData.telefono_celular}
                     onChange={handleChange}
+                    inputMode="numeric"
                     placeholder="+57 300 123 4567"
                     required
                     className="w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground outline-none transition-all placeholder:text-muted-foreground focus:border-forest focus:ring-2 focus:ring-forest/20"

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { ChevronDown, LogIn, LogOut, Menu, Shield, User, UserPlus, X } from "lucide-react"
 
 import { useAuth } from "@/controller/auth-controller"
@@ -65,10 +66,14 @@ export function Header() {
       >
         <div className="container mx-auto flex items-center justify-between px-4 sm:px-6">
           <Link href="#inicio" className="group flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-forest transition-transform group-hover:scale-110 sm:h-12 sm:w-12">
-              <svg viewBox="0 0 24 24" className="h-6 w-6 text-cream sm:h-7 sm:w-7" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
-              </svg>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-forest transition-transform group-hover:scale-110 sm:h-12 sm:w-12">
+              <Image
+                src="/images/simbolo.png"
+                alt="Logo Makakaw"
+                width={48}
+                height={48}
+                className="h-full w-full object-cover"
+              />
             </div>
             <div className="min-w-0">
               <span className="block truncate text-base font-serif font-bold tracking-wide text-cream sm:text-xl">

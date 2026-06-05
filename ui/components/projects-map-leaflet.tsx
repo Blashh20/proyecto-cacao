@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useEffect } from "react"
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet"
@@ -71,7 +71,11 @@ export function ProjectsMapLeaflet({
       center={MAP_CENTER}
       zoom={MAP_ZOOM}
       className="z-0 h-[500px] w-full rounded-2xl"
-      scrollWheelZoom={false}
+      scrollWheelZoom
+      touchZoom
+      doubleClickZoom
+      boxZoom
+      keyboard
       style={{ background: "#1a2e1a" }}
     >
       <MapSizeFixer />

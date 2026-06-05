@@ -13,6 +13,7 @@ import {
   Star,
 } from "lucide-react";
 
+import { useProducts } from "@/controller/products-controller";
 import { cn } from "@/ui/utils";
 import { supabase } from "@/services/client";
 import { useAuth } from "@/controller/auth-controller";

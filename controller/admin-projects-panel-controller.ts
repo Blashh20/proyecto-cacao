@@ -4,71 +4,11 @@ import { useCallback, useMemo, useState, type ChangeEvent, type FormEvent } from
 
 import { useAuth } from "@/controller/auth-controller"
 import { useProjects } from "@/controller/projects-controller"
+import { initialFormState, marketData, type AdminMetricSet, type AdminSection, type FormState } from "@/model/admin-projects"
 
-export type AdminSection = "resumen" | "proyectos" | "produccion" | "mercado"
-
-export interface FormState {
-  name: string
-  location: string
-  lat: string
-  lng: string
-  description: string
-  hectares: string
-  families: string
-  yearStarted: string
-  production: string
-  variety: string
-  image: string
-}
-
-export interface AdminMetricSet {
-  totalProjects: number
-  totalFamilies: number
-  totalHectares: number
-  totalProduction: number
-  avgProduction: number
-  newestYear: number
-}
-
-export const initialFormState: FormState = {
-  name: "",
-  location: "",
-  lat: "",
-  lng: "",
-  description: "",
-  hectares: "",
-  families: "",
-  yearStarted: "",
-  production: "",
-  variety: "",
-  image: "/images/cacao-pods.jpg",
-}
-
-export const marketData = [
-  {
-    title: "Mix comercial",
-    value: "48% exportacion",
-    description: "Mayor salida para cafe especial, cacao premium y derivados con valor agregado.",
-  },
-  {
-    title: "Canal con mayor crecimiento",
-    value: "Retail especializado",
-    description: "Tiendas gourmet y marcas bean-to-bar con crecimiento sostenido.",
-  },
-  {
-    title: "Oportunidad prioritaria",
-    value: "Cafe y cacao premium",
-    description: "Categorias de origen y trazabilidad con mejor margen comercial.",
-  },
-  {
-    title: "Riesgo comercial",
-    value: "Volatilidad de precios",
-    description: "Conviene monitorear costo logistico, clima y demanda internacional.",
-  },
-]
-
-export function parseProduction(value: string) {
-  const match = value.match(/\d+/)
+export function parseProduction(value?: string | null) {
+  const safeValue = value ?? ""
+  const match = safeValue.match(/\d+/)
   return match ? Number(match[0]) : 0
 }
 
@@ -133,10 +73,10 @@ export function useAdminProjectsPanelController() {
         })
 
         setForm(initialFormState)
-        setMessage("Proyecto guardado correctamente en Supabase.")
+        setMessage("Proyecto agregado correctamente.")
         setActiveSection("proyectos")
       } catch {
-        setMessage("No se pudo guardar el proyecto en Supabase. Verifica permisos y estructura de la tabla.")
+        setMessage("No se pudo guardar el proyecto.")
       } finally {
         setIsSaving(false)
       }
@@ -147,7 +87,6 @@ export function useAdminProjectsPanelController() {
   return {
     user,
     projects,
-
     form,
     message,
     activeSection,

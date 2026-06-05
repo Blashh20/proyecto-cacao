@@ -166,7 +166,7 @@ export function AdminProductsPanel() {
         descripcion: form.descripcion.trim(),
         categoria: form.categoria.trim(),
       }
-      
+
       // If we have a gallery ID (either existing or newly created/updated), send it
       if (id_galeria_foto) {
         payload.id_galeria_foto = id_galeria_foto
@@ -226,7 +226,7 @@ export function AdminProductsPanel() {
                 {editingId ? "Actualizar producto" : "Agregar productos"}
               </h2>
               <p className="mt-2 text-muted-foreground">
-                {editingId 
+                {editingId
                   ? "Modifica los campos del producto seleccionado y guarda los cambios."
                   : "Este formulario inserta directamente en Supabase (productos_derivados)."
                 }
@@ -350,7 +350,7 @@ export function AdminProductsPanel() {
   )
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-medium text-foreground">{label}</span>
@@ -358,3 +358,4 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </label>
   )
 }
+

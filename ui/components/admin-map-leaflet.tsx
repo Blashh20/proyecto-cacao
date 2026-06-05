@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet"
 import L from "leaflet"
@@ -102,3 +102,4 @@ export function AdminMapLeaflet({
     </MapContainer>
   )
 }
+

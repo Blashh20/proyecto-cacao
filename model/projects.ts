@@ -1,18 +1,69 @@
-import { supabase } from "@/services/client"
+// ===============================
+// model/projects.ts
+// ===============================
 
 export interface Project {
   id: number
+  id_empresa?: string
+
+  // Empresa
   name: string
+  nit: string
+  status: string
+
+  // Punto principal
   location: string
-  coordinates: { lat: number; lng: number }
+
+  coordinates: {
+    lat: number
+    lng: number
+  }
+
+  localType: string
+  phone: string
+
   description: string
+
   hectares: number
   families: number
   yearStarted: number
   production: string
   variety: string
+
   image: string
+
+  catalog: CatalogProduct[]
+
+  distributionPoints: DistributionPoint[]
+
   gallery?: ProjectGalleryImage[]
+}
+
+export interface DistributionPoint {
+  id: string
+
+  name: string
+  address: string
+  type: string
+  phone: string
+
+  coordinates: {
+    lat: number
+    lng: number
+  }
+}
+
+export interface CatalogProduct {
+  id_catalog: string
+
+  price: number
+  cost: number
+
+  product: {
+    name: string
+    category: string
+    description: string
+  }
 }
 
 export interface ProjectGalleryImage {
@@ -22,85 +73,31 @@ export interface ProjectGalleryImage {
   sourceUrl: string
 }
 
-export const defaultProjects: Project[] = []
-
-interface SupabaseProjectRow {
-  id: number
-  nombre: string
-  ubicacion: string
-  latitud: number
-  longitud: number
-  descripcion: string
-  hectareas: number
-  familias: number
-  anio_inicio: number
-  produccion: string
-  variedad: string
-  imagen: string | null
-}
-
 export interface NewProjectInput {
   name: string
+  nit?: string
+  status?: string
+
   location: string
+
   lat: number
   lng: number
+
+  localType?: string
+  phone?: string
+
   description: string
-  hectares: number
-  families: number
-  yearStarted: number
-  production: string
-  variety: string
+  hectares?: number
+  families?: number
+  yearStarted?: number
+  production?: string
+  variety?: string
+
   image: string
-}
 
-function mapRowToProject(row: SupabaseProjectRow): Project {
-  return {
-    id: row.id,
-    name: row.nombre,
-    location: row.ubicacion,
-    coordinates: { lat: row.latitud, lng: row.longitud },
-    description: row.descripcion,
-    hectares: row.hectareas,
-    families: row.familias,
-    yearStarted: row.anio_inicio,
-    production: row.produccion,
-    variety: row.variedad,
-    image: row.imagen ?? "/images/cacao-pods.jpg",
-  }
-}
+  catalog?: CatalogProduct[]
 
-export async function fetchProjects(): Promise<Project[]> {
-  const { data, error } = await supabase
-    .rpc("obtener_proyectos");
+  distributionPoints?: DistributionPoint[]
 
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return (data ?? [] as SupabaseProjectRow[]).map((row: SupabaseProjectRow) =>
-    mapRowToProject(row)
-  );
-}
-
-export async function createProject(project: NewProjectInput): Promise<Project> {
-  const { data, error } = await supabase
-    .rpc("crear_proyecto", {
-      nombre: project.name,
-      ubicacion: project.location,
-      latitud: project.lat,
-      longitud: project.lng,
-      descripcion: project.description,
-      hectareas: project.hectares,
-      familias: project.families,
-      anio_inicio: project.yearStarted,
-      produccion: project.production,
-      variedad: project.variety,
-      imagen: project.image,  
-    })
-
-  if (error) {
-    throw error
-  }
-
-  return mapRowToProject(data)
+  gallery?: ProjectGalleryImage[]
 }
