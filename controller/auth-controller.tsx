@@ -102,28 +102,27 @@ function buildNameFromUsuario(profile: UsuarioRow | null, fallbackName: string) 
   return parts.join(" ")
 }
 
-async function getUsuarioProfile(user: SupabaseUser) {
-  const documentId = String(user.user_metadata?.numero_identificacion ?? user.user_metadata?.id_usuario ?? "").trim()
-  const email = (user.email ?? "").trim().toLowerCase()
+async function getUsuarioProfile(id: string) {
+  const fields = "id, tipo_identificacion, numero_identificacion, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, email, telefono_celular, rol"
 
-  for (const table of DICTIONARY_TABLES.usuario) {
-    const fields = "id_usuario, tipo_identificacion, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, email, telefono_celular, rol"
-    const filters = [
-      documentId ? { column: "id_usuario", value: documentId } : null,
-      email ? { column: "email", value: email } : null,
-    ].filter((filter): filter is { column: string; value: string } => filter !== null)
+  const firstTry = await supabase
+    .from("usuario")
+    .select(fields)
+    .eq("id", id)
+    .maybeSingle<UsuarioRow>()
 
-    for (const filter of filters) {
-      const { data, error } = await supabase
-        .from(table)
-        .select(fields)
-        .eq(filter.column, filter.value)
-        .maybeSingle<UsuarioRow>()
+  if (firstTry.data) {
+    return firstTry.data
+  }
 
-      if (!error && data) {
-        return data
-      }
-    }
+  const secondTry = await supabase
+    .from("Usuarios")
+    .select(fields)
+    .eq("id", id)
+    .maybeSingle<UsuarioRow>()
+
+  if (secondTry.data) {
+    return secondTry.data
   }
 
   return null
