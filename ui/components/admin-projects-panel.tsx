@@ -43,6 +43,7 @@ interface FormState {
   production: string
   variety: string
   image: string
+  status: string
   gallery: ProjectGalleryImage[]
 }
 
@@ -61,6 +62,7 @@ const initialFormState: FormState = {
   production: "",
   variety: "",
   image: "/images/cacao-pods.jpg",
+  status: "Activo",
   gallery: [],
 }
 
@@ -159,6 +161,7 @@ export function AdminProjectsPanel() {
       production: project.production,
       variety: project.variety,
       image: project.image,
+      status: project.status,
       gallery: project.gallery || [],
     })
     document.getElementById("admin-form")?.scrollIntoView({ behavior: "smooth" })
@@ -268,6 +271,7 @@ export function AdminProjectsPanel() {
       production: form.production.trim(),
       variety: form.variety.trim(),
       image: form.image.trim() || "/images/cacao-pods.jpg",
+      status: form.status,
       gallery: form.gallery,
     }
 
@@ -286,6 +290,14 @@ export function AdminProjectsPanel() {
     } finally {
       setIsSaving(false)
     }
+  }
+
+  const handleStatusUpdate = async (project: Project, status: "Aprobado" | "Rechazado") => {
+    await updateProject(project.id, { status })
+    if (form.id === project.id) {
+      setForm((current) => ({ ...current, status }))
+    }
+    setMessage(`Proyecto ${status.toLowerCase()} correctamente.`)
   }
 
   return (
@@ -483,6 +495,18 @@ export function AdminProjectsPanel() {
                       <Field label="Variedad">
                         <input value={form.variety} onChange={handleChange("variety")} required className={inputClassName} />
                       </Field>
+                      <Field label="Estado de revision">
+                        <select
+                          value={form.status}
+                          onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))}
+                          className={inputClassName}
+                        >
+                          <option value="Pendiente">Pendiente</option>
+                          <option value="Aprobado">Aprobado</option>
+                          <option value="Rechazado">Rechazado</option>
+                          <option value="Activo">Activo</option>
+                        </select>
+                      </Field>
                       <Field label="Imagen Principal">
                         <div className="flex gap-2 items-center h-[50px]">
                           <input
@@ -573,11 +597,40 @@ export function AdminProjectsPanel() {
                               <h4 className="font-semibold text-foreground">{project.name}</h4>
                               <p className="text-sm text-muted-foreground">{project.location}</p>
                             </div>
-                            <span className="rounded-full bg-forest/10 px-3 py-1 text-xs font-semibold text-forest">
-                              {project.yearStarted}
-                            </span>
+                            <div className="flex flex-col items-end gap-2">
+                              <StatusBadge status={project.status} />
+                              <span className="rounded-full bg-forest/10 px-3 py-1 text-xs font-semibold text-forest">
+                                {project.yearStarted}
+                              </span>
+                            </div>
                           </div>
                           <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{project.description}</p>
+                          {project.status === "Pendiente" ? (
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation()
+                                  void handleStatusUpdate(project, "Aprobado")
+                                }}
+                                className="inline-flex items-center gap-1 rounded-lg bg-forest px-3 py-2 text-xs font-semibold text-white hover:bg-forest-dark"
+                              >
+                                <CheckCircle2 size={14} />
+                                Aprobar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation()
+                                  void handleStatusUpdate(project, "Rechazado")
+                                }}
+                                className="inline-flex items-center gap-1 rounded-lg bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-300 hover:bg-red-500/20"
+                              >
+                                <AlertCircle size={14} />
+                                Rechazar
+                              </button>
+                            </div>
+                          ) : null}
                           <div className="mt-4 flex flex-wrap gap-2 text-xs text-foreground">
                             <span className="rounded-full bg-forest/10 px-3 py-1">{project.hectares} ha</span>
                             <span className="rounded-full bg-forest/10 px-3 py-1">{project.families} familias</span>
@@ -740,6 +793,18 @@ export function AdminProjectsPanel() {
 
   function TipCard({ text }: { text: string }) {
     return <div className="rounded-2xl border border-border bg-background p-4 text-sm text-muted-foreground">{text}</div>
+  }
+
+  function StatusBadge({ status }: { status: string }) {
+    const normalized = status.toLowerCase()
+    const className =
+      normalized.includes("rechaz")
+        ? "bg-red-500/10 text-red-300"
+        : normalized.includes("aprob") || normalized.includes("activo")
+          ? "bg-forest/10 text-forest"
+          : "bg-amber-500/10 text-amber-300"
+
+    return <span className={`rounded-full px-3 py-1 text-xs font-semibold ${className}`}>{status}</span>
   }
 
   function Field({ label, children }: { label: string; children: ReactNode }) {

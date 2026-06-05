@@ -1,4 +1,4 @@
-export type Tab = "resumen" | "compras" | "perfil" | "pagos" | "seguridad"
+export type Tab = "resumen" | "compras" | "proyecto" | "perfil" | "pagos" | "seguridad"
 
 export interface PurchaseRow {
   id: string

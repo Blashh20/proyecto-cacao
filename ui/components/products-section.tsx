@@ -152,7 +152,7 @@ export function ProductsSection() {
                         {new Intl.NumberFormat("es-CO").format(product.precio ?? 0)}
                       </span>
                       <span className="text-xs uppercase tracking-wider text-cream/40">
-                        COP/
+                        COP/UNIDAD
                       </span>
                     </div>
                   </div>

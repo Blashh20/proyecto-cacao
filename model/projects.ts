@@ -10,6 +10,8 @@ export interface Project {
   name: string
   nit: string
   status: string
+  ownerId?: string
+  ownerEmail?: string
 
   // Punto principal
   location: string
@@ -77,6 +79,8 @@ export interface NewProjectInput {
   name: string
   nit?: string
   status?: string
+  ownerId?: string
+  ownerEmail?: string
 
   location: string
 

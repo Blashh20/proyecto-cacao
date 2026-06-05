@@ -155,6 +155,7 @@ function transformEmpresaToProject(params: {
     name: asString(empresa.nombre_comercial, "Empresa sin nombre"),
     nit: asString(empresa.nit),
     status: asString(empresa.estado_servicio, "Activo"),
+    ownerId: asString(empresa.id_usuario),
     location: locationRegion({
       idEmpresa,
       finca,
@@ -236,6 +237,8 @@ export async function createProject(project: NewProjectInput): Promise<Project> 
     name: project.name,
     nit: project.nit ?? "",
     status: project.status ?? "Activo",
+    ownerId: project.ownerId,
+    ownerEmail: project.ownerEmail,
     location: project.location,
     coordinates: {
       lat: project.lat,
