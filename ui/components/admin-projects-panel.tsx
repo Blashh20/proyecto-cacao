@@ -1,6 +1,6 @@
-﻿"use client"
+"use client"
 
-import { useMemo, useState, useEffect, type ChangeEvent, type FormEvent, type ReactNode } from "react"
+import { useMemo, useState, useEffect, useRef, type ChangeEvent, type FormEvent, type ReactNode } from "react"
 import { parseProduction, calculateYield } from "@/controller/admin-projects-panel-controller"
 import dynamic from "next/dynamic"
 import {
@@ -13,7 +13,14 @@ import {
   ShieldCheck,
   Sprout,
   TrendingUp,
+  Upload,
+  FileText,
+  CheckCircle2,
+  AlertCircle,
+  Download,
 } from "lucide-react"
+
+import { supabase } from "@/services/client"
 
 import { useAuth } from "@/controller/auth-controller"
 import { useProjects } from "@/controller/projects-controller"
@@ -39,7 +46,7 @@ interface FormState {
   gallery: ProjectGalleryImage[]
 }
 
-type AdminSection = "resumen" | "proyectos" | "produccion" | "mercado"
+type AdminSection = "resumen" | "proyectos" | "produccion" | "mercado" | "importar"
 
 const initialFormState: FormState = {
   id: null,
@@ -65,14 +72,16 @@ const adminSections: { id: AdminSection; label: string; icon: React.ComponentTyp
   { id: "proyectos", label: "Proyectos", icon: Sprout },
   { id: "produccion", label: "Produccion", icon: Factory },
   { id: "mercado", label: "Mercado", icon: Globe2 },
+  { id: "importar", label: "Importar CSV", icon: Upload },
 ]
 
 export function AdminProjectsPanel() {
   const { user } = useAuth()
-  const { projects, addProject, updateProject, deleteProject } = useProjects()
+  const { projects, addProject, updateProject, deleteProject, refreshProjects } = useProjects()
   const [form, setForm] = useState<FormState>(initialFormState)
   const [message, setMessage] = useState("")
   const [activeSection, setActiveSection] = useState<AdminSection>("resumen")
+  const [isSaving, setIsSaving] = useState(false)
 
   const metrics = useMemo(() => {
     const totalProjects = projects.length
@@ -155,11 +164,15 @@ export function AdminProjectsPanel() {
     document.getElementById("admin-form")?.scrollIntoView({ behavior: "smooth" })
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (form.id && window.confirm("¿Seguro que deseas eliminar este proyecto?")) {
-      deleteProject(form.id)
-      setForm(initialFormState)
-      setMessage("Proyecto eliminado correctamente.")
+      try {
+        await deleteProject(form.id)
+        setForm(initialFormState)
+        setMessage("Proyecto eliminado correctamente.")
+      } catch {
+        setMessage("Error al eliminar el proyecto. Verifica permisos en Supabase.")
+      }
     }
   }
 
@@ -238,8 +251,10 @@ export function AdminProjectsPanel() {
     }))
   }
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    setIsSaving(true)
+    setMessage("")
 
     const projectData = {
       name: form.name.trim(),
@@ -256,16 +271,21 @@ export function AdminProjectsPanel() {
       gallery: form.gallery,
     }
 
-    if (form.id) {
-      updateProject(form.id, projectData)
-      setMessage("Proyecto actualizado correctamente.")
-    } else {
-      addProject(projectData)
-      setMessage("Proyecto agregado correctamente al mapa y a la lista.")
+    try {
+      if (form.id) {
+        await updateProject(form.id, projectData)
+        setMessage("Proyecto actualizado correctamente.")
+      } else {
+        await addProject(projectData)
+        setMessage("Proyecto agregado correctamente.")
+      }
+      setForm(initialFormState)
+      setActiveSection("proyectos")
+    } catch {
+      setMessage("Error al guardar el proyecto. Verifica permisos en Supabase.")
+    } finally {
+      setIsSaving(false)
     }
-
-    setForm(initialFormState)
-    setActiveSection("proyectos")
   }
 
   return (
@@ -522,10 +542,11 @@ export function AdminProjectsPanel() {
                   <div className="flex gap-3">
                     <button
                       type="submit"
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-forest px-6 py-3 font-semibold text-white transition-colors hover:bg-forest-dark"
+                      disabled={isSaving}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-forest px-6 py-3 font-semibold text-white transition-colors hover:bg-forest-dark disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       <PlusCircle size={18} />
-                      {form.id ? "Actualizar proyecto" : "Guardar proyecto"}
+                      {isSaving ? "Guardando..." : form.id ? "Actualizar proyecto" : "Guardar proyecto"}
                     </button>
                     {form.id && (
                       <button
@@ -615,6 +636,10 @@ export function AdminProjectsPanel() {
                 </div>
               </DashboardCard>
             </div>
+          ) : null}
+
+          {activeSection === "importar" ? (
+            <CsvImportSection onImportSuccess={refreshProjects} />
           ) : null}
 
           {activeSection === "mercado" ? (
@@ -726,3 +751,283 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
+// ─── CSV Import ────────────────────────────────────────────────────────────
+
+const CSV_TEMPLATES = {
+  proyectos: {
+    headers: ["nombre","ubicacion","latitud","longitud","descripcion","hectareas","familias","anio_inicio","produccion","variedad","imagen"],
+    sample:  ["Proyecto Huila Norte","Pitalito, Huila","1.8762","-76.0502","Cacao fino de aroma en zona montanosa","150","45","2019","45 toneladas/ano","CCN-51","/images/cacao-pods.jpg"],
+  },
+  productos_derivados: {
+    headers: ["nombre_derivado","descripcion","imagen_url","tag","rating"],
+    sample:  ["Cacao en polvo premium","Cacao fino con notas frutales","/images/cacao-beans.jpg","Premium","4.8"],
+  },
+} as const
+
+type CsvTable = keyof typeof CSV_TEMPLATES
+
+function parseCSV(text: string): { headers: string[]; rows: Record<string, string>[] } {
+  const lines = text.trim().split(/\r?\n/)
+  if (lines.length < 2) return { headers: [], rows: [] }
+
+  const splitRow = (line: string): string[] => {
+    const result: string[] = []
+    let cur = ""
+    let inQ = false
+    for (const ch of line) {
+      if (ch === '"') { inQ = !inQ }
+      else if (ch === "," && !inQ) { result.push(cur.trim()); cur = "" }
+      else { cur += ch }
+    }
+    result.push(cur.trim())
+    return result
+  }
+
+  const headers = splitRow(lines[0])
+  const rows = lines.slice(1).filter(Boolean).map((line) => {
+    const vals = splitRow(line)
+    return Object.fromEntries(headers.map((h, i) => [h, vals[i] ?? ""]))
+  })
+  return { headers, rows }
+}
+
+function downloadTemplate(table: CsvTable) {
+  const { headers, sample } = CSV_TEMPLATES[table]
+  const csv = [headers.join(","), sample.join(",")].join("\n")
+  const blob = new Blob([csv], { type: "text/csv" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `plantilla_${table}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function CsvImportSection({ onImportSuccess }: { onImportSuccess: () => Promise<void> }) {
+  const [table, setTable] = useState<CsvTable>("proyectos")
+  const [headers, setHeaders] = useState<string[]>([])
+  const [rows, setRows] = useState<Record<string, string>[]>([])
+  const [fileName, setFileName] = useState("")
+  const [importing, setImporting] = useState(false)
+  const [results, setResults] = useState<{ success: number; errors: string[] } | null>(null)
+  const [colWarning, setColWarning] = useState<string | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const reset = () => { setHeaders([]); setRows([]); setFileName(""); setResults(null); setColWarning(null) }
+
+  const handleFile = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setFileName(file.name)
+    setResults(null)
+    setColWarning(null)
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const { headers: h, rows: r } = parseCSV(ev.target?.result as string)
+      setHeaders(h)
+      setRows(r)
+      // Validate columns match expected template
+      const expected = [...CSV_TEMPLATES[table].headers] as string[]
+      const missing = expected.filter((col) => !h.includes(col))
+      const extra = h.filter((col) => !expected.includes(col))
+      if (missing.length > 0 || extra.length > 0) {
+        const parts: string[] = []
+        if (missing.length) parts.push(`Columnas faltantes: ${missing.join(", ")}`)
+        if (extra.length) parts.push(`Columnas desconocidas (se ignorarán): ${extra.join(", ")}`)
+        setColWarning(parts.join(" | "))
+      }
+    }
+    reader.readAsText(file)
+  }
+
+  const handleImport = async () => {
+    if (!rows.length) return
+    // Block import if required columns are missing
+    const expected = [...CSV_TEMPLATES[table].headers] as string[]
+    const missing = expected.filter((col) => !headers.includes(col))
+    if (missing.length > 0) {
+      setResults({ success: 0, errors: [`No se puede importar: faltan las columnas requeridas: ${missing.join(", ")}`] })
+      return
+    }
+    setImporting(true)
+    setResults(null)
+    const errors: string[] = []
+    let success = 0
+
+    if (table === "proyectos") {
+      const payload = rows.map((row) => ({
+        nombre: row.nombre ?? "",
+        ubicacion: row.ubicacion ?? "",
+        latitud: Number(row.latitud ?? 0),
+        longitud: Number(row.longitud ?? 0),
+        descripcion: row.descripcion ?? "",
+        hectareas: Number(row.hectareas ?? 0),
+        familias: Number(row.familias ?? 0),
+        anio_inicio: Number(row.anio_inicio ?? 0),
+        produccion: row.produccion ?? "",
+        variedad: row.variedad ?? "",
+        imagen: row.imagen || "/images/cacao-pods.jpg",
+      }))
+      const { error } = await supabase.from("proyectos").insert(payload)
+      if (error) {
+        errors.push(error.message)
+      } else {
+        success = payload.length
+        await onImportSuccess()
+      }
+    } else {
+      const payload = rows.map((row) => ({
+        nombre_derivado: row.nombre_derivado ?? "",
+        description: row.descripcion ?? "",
+        imagen_url: row.imagen_url || "/images/cacao-beans.jpg",
+        tag: row.tag ?? "",
+        rating: Number(row.rating ?? 0),
+      }))
+      const { error } = await supabase.from("productos_derivados").insert(payload)
+      if (error) errors.push(error.message)
+      else success = payload.length
+    }
+
+    setResults({ success, errors })
+    setImporting(false)
+    if (inputRef.current) inputRef.current.value = ""
+    setRows([])
+    setHeaders([])
+    setFileName("")
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-3xl border border-border bg-card p-6 md:p-8">
+        <div className="mb-6 flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-forest/10">
+            <Upload size={20} className="text-forest" />
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold text-foreground">Importar datos desde CSV</h3>
+            <p className="text-sm text-muted-foreground">Sube un archivo CSV para insertar registros masivamente en Supabase.</p>
+          </div>
+        </div>
+
+        <div className="mb-6 flex gap-3">
+          {(["proyectos", "productos_derivados"] as CsvTable[]).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => { setTable(t); reset() }}
+              className={`rounded-xl border px-5 py-2.5 text-sm font-medium transition-all ${
+                table === t
+                  ? "border-forest bg-forest text-white shadow-lg shadow-forest/20"
+                  : "border-border text-muted-foreground hover:border-forest/40 hover:text-foreground"
+              }`}
+            >
+              {t === "proyectos" ? "Proyectos" : "Productos"}
+            </button>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => downloadTemplate(table)}
+          className="mb-6 inline-flex items-center gap-2 rounded-xl border border-forest/30 bg-forest/5 px-4 py-2.5 text-sm font-medium text-forest transition-colors hover:bg-forest/10"
+        >
+          <Download size={16} />
+          Descargar plantilla CSV
+        </button>
+
+        <div className="mb-6 rounded-2xl border border-border bg-background p-4">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Columnas requeridas</p>
+          <div className="flex flex-wrap gap-2">
+            {CSV_TEMPLATES[table].headers.map((h) => (
+              <span key={h} className="rounded-full bg-forest/10 px-3 py-1 text-xs font-mono text-forest">{h}</span>
+            ))}
+          </div>
+        </div>
+
+        <label className="block">
+          <span className="mb-2 block text-sm font-medium text-foreground">Seleccionar archivo CSV</span>
+          <input
+            ref={inputRef}
+            type="file"
+            accept=".csv,text/csv"
+            onChange={handleFile}
+            className="block w-full text-sm text-muted-foreground file:mr-4 file:rounded-full file:border-0 file:bg-forest/10 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-forest hover:file:bg-forest/20"
+          />
+          {fileName && (
+            <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+              <FileText size={13} />
+              {fileName} — {rows.length} fila(s) detectada(s)
+            </p>
+          )}
+        </label>
+      </div>
+
+      {/* Column mismatch warning */}
+      {colWarning && (
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3">
+          <AlertCircle size={20} className="mt-0.5 shrink-0 text-amber-400" />
+          <div>
+            <p className="text-sm font-semibold text-amber-300">Advertencia de columnas</p>
+            <p className="mt-1 text-sm text-amber-200/80">{colWarning}</p>
+            <p className="mt-1 text-xs text-amber-200/60">Descarga la plantilla CSV para ver el formato correcto.</p>
+          </div>
+        </div>
+      )}
+
+      {rows.length > 0 && (
+        <div className="rounded-3xl border border-border bg-card p-6 md:p-8">
+          <h4 className="mb-4 font-semibold text-foreground">
+            Vista previa ({Math.min(rows.length, 5)} de {rows.length} filas)
+          </h4>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  {headers.map((h) => (
+                    <th key={h} className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.slice(0, 5).map((row, i) => (
+                  <tr key={i} className="border-b border-border/50 transition-colors hover:bg-forest/5">
+                    {headers.map((h) => (
+                      <td key={h} className="max-w-[160px] truncate px-3 py-2 text-foreground">{row[h]}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <button
+            type="button"
+            onClick={handleImport}
+            disabled={importing}
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-forest px-6 py-3 font-semibold text-white transition-colors hover:bg-forest-dark disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Upload size={18} />
+            {importing ? "Importando..." : `Importar ${rows.length} registro(s)`}
+          </button>
+        </div>
+      )}
+
+      {results && (
+        <div className="rounded-3xl border border-border bg-card p-6 md:p-8 space-y-4">
+          <h4 className="font-semibold text-foreground">Resultado de la importacion</h4>
+          {results.success > 0 && (
+            <div className="flex items-center gap-3 rounded-2xl border border-forest/30 bg-forest/10 px-4 py-3">
+              <CheckCircle2 size={20} className="shrink-0 text-forest" />
+              <p className="text-sm text-foreground">{results.success} registro(s) importados correctamente.</p>
+            </div>
+          )}
+          {results.errors.map((err, i) => (
+            <div key={i} className="flex items-start gap-3 rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3">
+              <AlertCircle size={20} className="mt-0.5 shrink-0 text-red-400" />
+              <p className="text-sm text-red-300">{err}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}

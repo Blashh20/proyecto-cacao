@@ -102,19 +102,29 @@ function buildNameFromUsuario(profile: UsuarioRow | null, fallbackName: string) 
 }
 
 async function getUsuarioProfile(id: string) {
-  const { data, error } = await supabase
+  const fields = "id, tipo_identificacion, numero_identificacion, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, email, telefono_celular, rol"
+  
+  const firstTry = await supabase
     .from("usuario")
-    .select(
-      "id, tipo_identificacion, numero_identificacion, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, email, telefono_celular, rol"
-    )
+    .select(fields)
     .eq("id", id)
     .maybeSingle<UsuarioRow>()
 
-  if (error) {
-    return null
+  if (firstTry.data) {
+    return firstTry.data
   }
 
-  return data
+  const secondTry = await supabase
+    .from("Usuarios")
+    .select(fields)
+    .eq("id", id)
+    .maybeSingle<UsuarioRow>()
+
+  if (secondTry.data) {
+    return secondTry.data
+  }
+
+  return null
 }
 
 async function mapSupabaseUser(user: SupabaseUser): Promise<User> {
