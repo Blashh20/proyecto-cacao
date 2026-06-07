@@ -1,9 +1,20 @@
 "use client"
 
-import { CreditCard, KeyRound, Shield, ShoppingBag } from "lucide-react"
+import { BadgeCheck, CreditCard, FileText, KeyRound, MapPin, Send, Shield, ShoppingBag, Upload, UserRound } from "lucide-react"
 import Image from "next/image"
-import { useState, type ReactNode } from "react"
+import { useMemo, useState, type ChangeEvent, type ReactNode } from "react"
 import type { PaymentMethodItem, PaymentSettings, PurchaseRow, Tab } from "@/model/profile"
+import type { Project } from "@/model/projects"
+import {
+  CACAO_VARIETIES,
+  IDENTIFICATION_TYPES,
+  LOCATION_CATALOG,
+  PRODUCTION_RANGES,
+  PROJECT_TYPES,
+  getMunicipalitiesByDepartment,
+} from "@/ui/components/profile/profile-catalogs"
+
+export { ProfileLogoLoader } from "@/ui/components/profile/profile-loader"
 
 export function ProfileHero({
   fullName,
@@ -157,6 +168,149 @@ export function PurchasesTab({ purchases }: { purchases: PurchaseRow[] }) {
           ))
         )}
       </div>
+    </section>
+  )
+}
+
+export function ProjectSubmissionTab({
+  form,
+  setForm,
+  projects,
+  onSubmit,
+}: {
+  form: {
+    name: string
+    location: string
+    lat: string
+    lng: string
+    description: string
+    hectares: string
+    families: string
+    yearStarted: string
+    production: string
+    variety: string
+    image: string
+  }
+  setForm: (next: (prev: {
+    name: string
+    location: string
+    lat: string
+    lng: string
+    description: string
+    hectares: string
+    families: string
+    yearStarted: string
+    production: string
+    variety: string
+    image: string
+  }) => {
+    name: string
+    location: string
+    lat: string
+    lng: string
+    description: string
+    hectares: string
+    families: string
+    yearStarted: string
+    production: string
+    variety: string
+    image: string
+  }) => void
+  projects: Project[]
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
+}) {
+  const handleImage = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      setForm((current) => ({ ...current, image: String(reader.result || "/images/cacao-pods.jpg") }))
+    }
+    reader.readAsDataURL(file)
+  }
+
+  return (
+    <section className="mt-4 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+      <form onSubmit={onSubmit} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <div className="mb-5 flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-forest/10 text-forest">
+            <Upload size={20} />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-foreground">Subir proyecto</h3>
+            <p className="text-sm text-muted-foreground">Envia la informacion para revision del administrador.</p>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <Input label="Nombre del proyecto" value={form.name} onChange={(value) => setForm((s) => ({ ...s, name: value }))} />
+          
+          <label className="block">
+            <span className="mb-2 block text-sm font-medium text-foreground">Ubicacion</span>
+            <select
+              name="location"
+              id="location"
+              value={form.location}
+              onChange={(event) => setForm((s) => ({ ...s, location: event.target.value }))}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
+            >
+              <option value="">Selecciona una ubicacion</option>
+              
+            </select>
+          </label>
+          <Input label="Latitud" type="number" value={form.lat} onChange={(value) => setForm((s) => ({ ...s, lat: value }))} />
+          <Input label="Longitud" type="number" value={form.lng} onChange={(value) => setForm((s) => ({ ...s, lng: value }))} />
+          <Input label="Hectareas" type="number" value={form.hectares} onChange={(value) => setForm((s) => ({ ...s, hectares: value }))} />
+          <Input label="Familias beneficiadas" type="number" value={form.families} onChange={(value) => setForm((s) => ({ ...s, families: value }))} />
+          <Input label="Ano de inicio" type="number" value={form.yearStarted} onChange={(value) => setForm((s) => ({ ...s, yearStarted: value }))} />
+          <Input label="Produccion estimada" value={form.production} onChange={(value) => setForm((s) => ({ ...s, production: value }))} placeholder="45 toneladas/ano" />
+          <Input label="Variedad principal" value={form.variety} onChange={(value) => setForm((s) => ({ ...s, variety: value }))} />
+          <label className="block">
+            <span className="mb-2 block text-sm font-medium text-foreground">Imagen del proyecto</span>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImage}
+              className="block w-full text-sm text-muted-foreground file:mr-4 file:rounded-full file:border-0 file:bg-forest/10 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-forest hover:file:bg-forest/20"
+            />
+          </label>
+        </div>
+
+        <label className="mt-4 block">
+          <span className="mb-2 block text-sm font-medium text-foreground">Descripcion</span>
+          <textarea
+            value={form.description}
+            onChange={(event) => setForm((s) => ({ ...s, description: event.target.value }))}
+            rows={5}
+            className="w-full resize-none rounded-xl border border-border bg-background px-4 py-3 text-foreground outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/20"
+          />
+        </label>
+
+        <button type="submit" className="mt-5 inline-flex items-center gap-2 rounded-xl bg-forest px-6 py-3 font-semibold text-white hover:bg-forest-dark">
+          <Send size={16} />
+          Enviar a revision
+        </button>
+      </form>
+
+      <aside className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <h3 className="text-sm font-bold text-foreground">Mis solicitudes</h3>
+        <div className="mt-3 space-y-3">
+          {projects.length === 0 ? <p className="text-sm text-muted-foreground">Todavia no has enviado proyectos.</p> : null}
+          {projects.slice().reverse().map((project) => (
+            <article key={project.id} className="rounded-xl border border-border bg-background p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{project.name}</p>
+                  <p className="text-xs text-muted-foreground">{project.location}</p>
+                </div>
+                <StatusBadge status={project.status} />
+              </div>
+              <p className="mt-2 line-clamp-3 text-xs text-muted-foreground">{project.description}</p>
+            </article>
+          ))}
+        </div>
+      </aside>
     </section>
   )
 }
@@ -396,6 +550,18 @@ function MetricCard({ title, value, icon }: { title: string; value: string; icon
       <p className="text-xl font-bold text-foreground">{value}</p>
     </article>
   )
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const normalized = status.toLowerCase()
+  const className =
+    normalized.includes("rechaz")
+      ? "bg-red-500/10 text-red-300"
+      : normalized.includes("aprob") || normalized.includes("activo")
+        ? "bg-forest/10 text-forest-light"
+        : "bg-amber-500/10 text-amber-300"
+
+  return <span className={`rounded-full px-3 py-1 text-xs font-semibold ${className}`}>{status}</span>
 }
 
 function Input({

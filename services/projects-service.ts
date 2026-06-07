@@ -79,7 +79,7 @@ function buildCatalog(
       product: {
         name: asString(product?.nombre_derivado),
         category: asString(product?.categoria),
-        description: asString(product?.descripcion_tecnica),
+        description: asString(product?.descripcion),
       },
     }
   })
@@ -155,6 +155,7 @@ function transformEmpresaToProject(params: {
     name: asString(empresa.nombre_comercial, "Empresa sin nombre"),
     nit: asString(empresa.nit),
     status: asString(empresa.estado_servicio, "Activo"),
+    ownerId: asString(empresa.id_usuario),
     location: locationRegion({
       idEmpresa,
       finca,
@@ -195,7 +196,7 @@ export async function fetchProjects(): Promise<Project[]> {
     selectFirstAvailableTable(DICTIONARY_TABLES.fincas, "id_finca, id_empresa, id_region, nombre_finca, area_hectareas, geometria_poligono, cumple_norma_ue, analisis_dofa, fecha_creacion"),
     selectFirstAvailableTable(DICTIONARY_TABLES.impactoSostenibilidad, "id_impacto, id_finca, hectareas_conservadas, empleos_comunitarios, indice_regeneracion, fecha_creacion"),
     selectFirstAvailableTable(DICTIONARY_TABLES.catalogoEmpresa, "id_catalogo, id_empresa, id_producto, precio_sugerido, costo_produccion, fecha_creacion"),
-    selectFirstAvailableTable(DICTIONARY_TABLES.productosDerivados, "id_producto, nombre_derivado, categoria, descripcion_tecnica, fecha_creacion"),
+    selectFirstAvailableTable(DICTIONARY_TABLES.productosDerivados, "id_producto, nombre_derivado, categoria, descripcion, fecha_creacion"),
     selectFirstAvailableTable(DICTIONARY_TABLES.vinculoGaleria, "id_vinculo, id_foto, entidad_tipo"),
     selectFirstAvailableTable(DICTIONARY_TABLES.galeriaFotos, "id_foto, url_foto, titulo, descripcion, fecha_creacion"),
   ])
@@ -236,6 +237,8 @@ export async function createProject(project: NewProjectInput): Promise<Project> 
     name: project.name,
     nit: project.nit ?? "",
     status: project.status ?? "Activo",
+    ownerId: project.ownerId,
+    ownerEmail: project.ownerEmail,
     location: project.location,
     coordinates: {
       lat: project.lat,

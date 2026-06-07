@@ -26,13 +26,20 @@ export function useAdminProjectsPanelController() {
   const [activeSection, setActiveSection] = useState<AdminSection>("resumen")
   const [isSaving, setIsSaving] = useState(false)
 
+  type ProjectMetrics = {
+    families: number
+    hectares: number
+    production?: string | null
+    yearStarted: number
+  }
+
   const metrics = useMemo<AdminMetricSet>(() => {
     const totalProjects = projects.length
-    const totalFamilies = projects.reduce((sum, project) => sum + project.families, 0)
-    const totalHectares = projects.reduce((sum, project) => sum + project.hectares, 0)
-    const totalProduction = projects.reduce((sum, project) => sum + parseProduction(project.production), 0)
+    const totalFamilies = projects.reduce((sum: number, project: ProjectMetrics) => sum + project.families, 0)
+    const totalHectares = projects.reduce((sum: number, project: ProjectMetrics) => sum + project.hectares, 0)
+    const totalProduction = projects.reduce((sum: number, project: ProjectMetrics) => sum + parseProduction(project.production), 0)
     const avgProduction = totalProjects > 0 ? Math.round(totalProduction / totalProjects) : 0
-    const newestYear = projects.reduce((max, project) => Math.max(max, project.yearStarted), 0)
+    const newestYear = projects.reduce((max: number, project: ProjectMetrics) => Math.max(max, project.yearStarted), 0)
 
     return {
       totalProjects,

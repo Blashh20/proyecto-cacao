@@ -84,14 +84,14 @@ export function ContactSection() {
   }
 
   return (
-    <section id="contacto" ref={sectionRef} className="relative overflow-hidden py-20 md:py-32">
+    <section id="contacto" ref={sectionRef} className="relative overflow-hidden py-14 sm:py-16 lg:py-20">
       <div className="absolute inset-0">
         <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-forest/5 blur-3xl" />
         <div className="absolute bottom-0 left-0 h-96 w-96 rounded-full bg-chocolate/5 blur-3xl" />
       </div>
 
       <div className="container relative z-10 mx-auto px-4 sm:px-6">
-        <div className="mb-14 text-center md:mb-16">
+        <div className="mb-10 text-center md:mb-12">
           <span
             className={cn(
               "mb-4 inline-block text-sm uppercase tracking-[0.3em] text-forest-light transition-all duration-700",
@@ -102,7 +102,7 @@ export function ContactSection() {
           </span>
           <h2
             className={cn(
-              "mb-6 text-3xl font-serif font-bold text-cream transition-all duration-700 delay-100 sm:text-4xl md:text-5xl lg:text-6xl",
+              "mb-4 text-3xl font-serif font-bold text-cream transition-all duration-700 delay-100 sm:text-4xl lg:text-5xl",
               isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
             )}
           >
@@ -120,14 +120,14 @@ export function ContactSection() {
           </p>
         </div>
 
-        <div className="grid gap-10 lg:grid-cols-2 lg:gap-20">
+        <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
           <div
             className={cn(
               "transition-all duration-700 delay-300",
               isVisible ? "translate-x-0 opacity-100" : "-translate-x-12 opacity-0"
             )}
           >
-            <div className="rounded-2xl border border-border bg-card p-5 sm:p-6 md:p-10">
+            <div className="rounded-2xl border border-border bg-card p-4 sm:p-6 lg:p-8">
               {isSubmitted ? (
                 <div className="py-12 text-center">
                   <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-forest/20">

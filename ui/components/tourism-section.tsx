@@ -75,9 +75,9 @@ export function TourismSection() {
   }
 
   return (
-    <section id="turismo" className="bg-background py-24">
-      <div className="container mx-auto px-6">
-        <div className="mb-12 text-center">
+    <section id="turismo" className="bg-background py-14 sm:py-16 lg:py-20">
+      <div className="container mx-auto px-4 sm:px-6">
+        <div className="mb-10 text-center">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-forest/10 px-4 py-2 text-forest">
             <Compass size={16} />
             <span className="text-sm font-medium uppercase tracking-wider">
@@ -85,7 +85,7 @@ export function TourismSection() {
             </span>
           </div>
 
-          <h2 className="text-4xl font-serif font-bold text-foreground md:text-5xl">
+          <h2 className="text-3xl font-serif font-bold text-foreground sm:text-4xl lg:text-5xl">
             Recorridos turísticos
           </h2>
 
@@ -104,7 +104,7 @@ export function TourismSection() {
           </div>
         ) : (
           <>
-            <div className="mb-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            <div className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {routes.map((routeItem) => {
                 const isSelected = selectedRoute?.id_ruta === routeItem.id_ruta
 
@@ -115,14 +115,14 @@ export function TourismSection() {
                     onClick={() => openRoute(routeItem)}
                     aria-expanded={isSelected}
                     className={cn(
-                      "group flex min-h-56 w-full flex-col justify-between rounded-3xl border bg-card p-6 text-left shadow-sm transition-all",
+                      "group flex min-h-44 w-full flex-col justify-between rounded-2xl border bg-card p-4 text-left shadow-sm transition-all sm:min-h-48 sm:p-5",
                       isSelected
                         ? "border-forest bg-forest/10 shadow-lg"
                         : "border-border hover:-translate-y-1 hover:border-forest/50 hover:shadow-md"
                     )}
                   >
                     <div>
-                      <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-forest/10 text-forest transition-transform group-hover:scale-105">
+                      <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-forest/10 text-forest transition-transform group-hover:scale-105">
                         <Route size={22} />
                       </div>
 
@@ -155,7 +155,7 @@ export function TourismSection() {
             </div>
 
             {!selectedRoute ? (
-              <div className="rounded-3xl border border-dashed border-border bg-card/60 p-8 text-center text-sm text-muted-foreground">
+              <div className="rounded-2xl border border-dashed border-border bg-card/60 p-5 text-center text-sm text-muted-foreground sm:p-6">
                 Selecciona una tarjeta para abrir la información completa de la ruta.
               </div>
             ) : (
@@ -167,7 +167,7 @@ export function TourismSection() {
                   onClick={closeRoute}
                 />
 
-                <div className="relative max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-border bg-card p-5 shadow-2xl animate-in fade-in zoom-in-95 duration-300 sm:p-6">
+                <div className="relative max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-2xl border border-border bg-card p-4 shadow-2xl animate-in fade-in zoom-in-95 duration-300 sm:p-6">
                   <button
                     type="button"
                     onClick={closeRoute}
@@ -217,7 +217,7 @@ export function TourismSection() {
                   ))}
                 </div>
 
-                <div className="rounded-3xl border border-border bg-card p-4 lg:col-span-2">
+                <div className="rounded-2xl border border-border bg-card p-4 lg:col-span-2">
                   <div className="mb-4 flex items-center gap-2 text-foreground">
                     <Route size={18} className="text-forest" />
                     <h3 className="font-semibold">{selectedRoute.nombre_ruta}</h3>

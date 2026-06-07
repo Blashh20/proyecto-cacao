@@ -1,10 +1,13 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react"
 
 import type { ProductItem } from "@/model/products"
 import { supabase } from "@/services/client"
 import { DICTIONARY_TABLES } from "@/services/dictionary-db"
+
+const PRODUCT_IMAGES_BUCKET = "Galeria"
+const FALLBACK_PRODUCT_IMAGE = "/images/cacao-beans.jpg"
 
 const asString = (value: unknown, fallback = "") =>
   typeof value === "string" ? value : value == null ? fallback : String(value)
@@ -18,10 +21,25 @@ const asNumber = (value: unknown, fallback = 0) => {
   return fallback
 }
 
+const isAbsoluteUrl = (value: string) => /^https?:\/\//i.test(value)
+
+function getProductImageUrl(value: unknown): string {
+  const rawValue = asString(value).trim()
+  if (!rawValue) return FALLBACK_PRODUCT_IMAGE
+  if (isAbsoluteUrl(rawValue) || rawValue.startsWith("/")) return rawValue
+
+  const storagePath = rawValue
+    .replace(/^public\//, "")
+    .replace(new RegExp(`^${PRODUCT_IMAGES_BUCKET}/`), "")
+
+  const { data } = supabase.storage.from(PRODUCT_IMAGES_BUCKET).getPublicUrl(storagePath)
+  return data.publicUrl || FALLBACK_PRODUCT_IMAGE
+}
+
 export async function fetchProducts(): Promise<ProductItem[]> {
   const productsRes = await supabase
     .from(DICTIONARY_TABLES.productosDerivados[0])
-    .select("id_producto, nombre_derivado, categoria, descripcion_tecnica, fecha_creacion")
+    .select("*")
     .order("fecha_creacion", { ascending: false })
 
   if (productsRes.error || !Array.isArray(productsRes.data)) {
@@ -33,33 +51,39 @@ export async function fetchProducts(): Promise<ProductItem[]> {
     productIds.length > 0
       ? supabase
           .from(DICTIONARY_TABLES.catalogoEmpresa[0])
-          .select("id_catalogo, id_producto, precio_sugerido")
+          .select("id_catalogo, id_producto, precio_unitario")
           .in("id_producto", productIds)
       : Promise.resolve({ data: [], error: null }),
     productIds.length > 0
       ? supabase
           .from(DICTIONARY_TABLES.vinculoGaleria[0])
-          .select("id_vinculo, id_foto, entidad_tipo")
+          .select("*")
           .eq("entidad_tipo", "PRODUCTO")
       : Promise.resolve({ data: [], error: null }),
   ])
 
 
   const priceByProductId = new Map<string, number>()
+  console.log("Catalog data:", catalogRes.data);
   if (!catalogRes.error && Array.isArray(catalogRes.data)) {
     for (const row of catalogRes.data as Record<string, unknown>[]) {
       const productId = asString(row.id_producto)
       if (productId && !priceByProductId.has(productId)) {
-        console.log("Producto", productId, "precio sugerido:", row.precio_sugerido)
-        priceByProductId.set(productId, asNumber(row.precio_sugerido, 0))
+        priceByProductId.set(productId, asNumber(row.precio_unitario, 0))
       }
     }
   }
 
   const photoIdByProductId = new Map<string, string>()
+  for (const row of productsRes.data as Record<string, unknown>[]) {
+    const productId = asString(row.id_producto)
+    const photoId = asString(row.id_galeria_foto)
+    if (productId && photoId) photoIdByProductId.set(productId, photoId)
+  }
+
   if (!linksRes.error && Array.isArray(linksRes.data)) {
     for (const row of linksRes.data as Record<string, unknown>[]) {
-      const productId = asString(row.id_empresa)
+      const productId = asString(row.id_producto ?? row.id_entidad ?? row.entidad_id ?? row.id_empresa)
       const photoId = asString(row.id_foto)
       if (productId && photoId && !photoIdByProductId.has(productId)) {
         photoIdByProductId.set(productId, photoId)
@@ -79,8 +103,7 @@ export async function fetchProducts(): Promise<ProductItem[]> {
     if (!photosRes.error && Array.isArray(photosRes.data)) {
       for (const row of photosRes.data as Record<string, unknown>[]) {
         const photoId = asString(row.id_foto)
-        const url = asString(row.url_foto)
-        if (photoId && url) imageByPhotoId.set(photoId, url)
+        if (photoId) imageByPhotoId.set(photoId, getProductImageUrl(row.url_foto))
       }
     }
   }
@@ -88,18 +111,18 @@ export async function fetchProducts(): Promise<ProductItem[]> {
   return productsRes.data.map((row, index) => {
     const productId = asString(row.id_producto, `prod-${index}`)
     const photoId = photoIdByProductId.get(productId)
+    const imageUrl = photoId ? imageByPhotoId.get(photoId) ?? null : null
 
     return {
       id_producto: productId,
       nombre_derivado: asString(row.nombre_derivado, "Producto sin nombre"),
-      imagen_url: imageByPhotoId.get(photoId ?? "") ?? "/images/cacao-beans.jpg",
+      imagen_url: imageUrl ?? getProductImageUrl(row.imagen_url ?? row.url_foto),
       tag: asString(row.categoria, "Makakaw"),
       rating: 4.8,
-      descripcion: asString(row.descripcion_tecnica, "Sin descripción disponible."),
+      descripcion: asString(row.descripcion, "Sin descripción disponible."),
       categoria: row.categoria ? String(row.categoria) : undefined,
       fecha_creacion: row.fecha_creacion ? String(row.fecha_creacion) : undefined,
       id_galeria_foto: photoId ?? null,
-      descripcion_tecnica: row.descripcion_tecnica ? String(row.descripcion_tecnica) : null,
       precio: priceByProductId.get(productId) ?? null,
     }
   })

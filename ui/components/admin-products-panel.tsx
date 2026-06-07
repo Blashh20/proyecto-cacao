@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect, type ChangeEvent, type FormEvent } from "react"
+import { useState, useRef, useEffect, type ChangeEvent, type FormEvent, type ReactNode } from "react"
 import { PlusCircle, ShieldCheck, ImagePlus, X, Save, RotateCcw } from "lucide-react"
 
 import { useAuth } from "@/controller/auth-controller"
@@ -213,7 +213,7 @@ export function AdminProductsPanel() {
   }
 
   return (
-    <section id="admin-productos" className="border-y border-border bg-background py-20">
+    <section id="admin-productos" className="border-y border-border bg-background py-14 sm:py-16 lg:py-20">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="mx-auto max-w-4xl rounded-3xl border border-border bg-card p-6 md:p-8">
           <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

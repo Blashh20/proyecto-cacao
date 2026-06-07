@@ -73,7 +73,7 @@ export function AdminMapLeaflet({
     <MapContainer
       center={MAP_CENTER}
       zoom={MAP_ZOOM}
-      className="z-0 h-[400px] w-full rounded-2xl"
+      className="z-0 h-[300px] w-full rounded-2xl sm:h-[360px] lg:h-[400px]"
       scrollWheelZoom
       style={{ background: "#1a2e1a" }}
     >

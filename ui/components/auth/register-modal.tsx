@@ -145,11 +145,11 @@ export function RegisterModal({
       />
 
       
-        <div className="max-h-[90vh] overflow-y-auto p-8">
+        <div className="max-h-[90vh] overflow-y-auto p-2 sm:p-4">
           <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-300">
             <div className="h-2 bg-gradient-to-r from-forest via-forest-light to-forest" />
 
-            <div className="p-8">
+            <div className="p-5 sm:p-6">
               <button
                 onClick={onClose}
                 className="absolute right-4 top-4 text-muted-foreground transition-colors hover:text-foreground"
@@ -158,8 +158,8 @@ export function RegisterModal({
               </button>
 
               <div className="mb-6 text-center">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-forest/20">
-                  <UserPlus className="h-8 w-8 text-forest" />
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-forest/20">
+                  <UserPlus className="h-7 w-7 text-forest" />
                 </div>
                 <h2 className="text-2xl font-serif font-bold text-foreground">
                   Crear Cuenta

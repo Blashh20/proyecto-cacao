@@ -79,9 +79,9 @@ export function GallerySection() {
   }, [selectedImage])
 
   return (
-    <section ref={sectionRef} className="relative overflow-hidden bg-card/30 py-20 md:py-32">
+    <section ref={sectionRef} className="relative overflow-hidden bg-card/30 py-14 sm:py-16 lg:py-20">
       <div className="container mx-auto px-4 sm:px-6">
-        <div className="mb-14 text-center md:mb-16">
+        <div className="mb-10 text-center md:mb-12">
           <span
             className={cn(
               "mb-4 inline-block text-sm uppercase tracking-[0.3em] text-forest-light transition-all duration-700",
@@ -92,7 +92,7 @@ export function GallerySection() {
           </span>
           <h2
             className={cn(
-              "mb-6 text-3xl font-serif font-bold text-cream transition-all duration-700 delay-100 sm:text-4xl md:text-5xl lg:text-6xl",
+              "mb-4 text-3xl font-serif font-bold text-cream transition-all duration-700 delay-100 sm:text-4xl lg:text-5xl",
               isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
             )}
           >
@@ -102,7 +102,7 @@ export function GallerySection() {
           </h2>
         </div>
 
-        <div className="grid grid-cols-2 auto-rows-[140px] gap-3 sm:auto-rows-[180px] md:grid-cols-4 md:auto-rows-[250px] md:gap-4">
+        <div className="grid auto-rows-[120px] grid-cols-2 gap-3 sm:auto-rows-[160px] md:grid-cols-4 md:auto-rows-[210px] md:gap-4">
           {galleryImages.map((image, index) => (
             <button
               key={index}

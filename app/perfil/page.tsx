@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "re
 import { ArrowLeft } from "lucide-react"
 
 import { useAuth } from "@/controller/auth-controller"
+import { useProjects } from "@/controller/projects-controller"
 import {
   getPaymentSettings,
   getProfile,
@@ -19,15 +20,18 @@ import type { PaymentMethodItem, PaymentSettings, PurchaseRow, Tab, UsuarioProfi
 import {
   ProfileHero,
   ProfileFormTab,
+  ProfileLogoLoader,
   PurchasesTab,
   SecurityTab,
   SummaryTab,
   PaymentsTab,
+  ProjectSubmissionTab,
 } from "@/ui/components/profile/profile-dashboard"
 
 const tabs: { id: Tab; label: string }[] = [
   { id: "resumen", label: "Inicio" },
   { id: "compras", label: "Ventas" },
+  { id: "proyecto", label: "Proyecto" },
   { id: "perfil", label: "Informacion" },
   { id: "pagos", label: "Pagos" },
   { id: "seguridad", label: "Seguridad" },
@@ -49,6 +53,7 @@ function Link({ href, className, children }: Props) {
 
 export default function PerfilPage() {
   const { user, isAuthenticated, isLoading } = useAuth()
+  const { projects, addProject } = useProjects()
   const [activeTab, setActiveTab] = useState<Tab>("resumen")
   const [profile, setProfile] = useState<UsuarioProfile | null>(null)
   const [purchases, setPurchases] = useState<PurchaseRow[]>([])
@@ -73,6 +78,21 @@ export default function PerfilPage() {
   })
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodItem[]>([])
   const [securityForm, setSecurityForm] = useState({ password: "", confirm: "" })
+  const [projectForm, setProjectForm] = useState({
+    name: "",
+    department: "",
+    municipality: "",
+    lat: "10.4631",
+    lng: "-73.2532",
+    localType: "Finca",
+    description: "",
+    hectares: "",
+    families: "",
+    yearStarted: String(new Date().getFullYear()),
+    production: "",
+    variety: "",
+    image: "/images/cacao-pods.jpg",
+  })
 
   useEffect(() => {
     const loadAll = async () => {
@@ -130,14 +150,19 @@ export default function PerfilPage() {
     return Math.round((completed / checks.length) * 100)
   }, [profileForm])
 
+  const myProjects = useMemo(() => {
+    if (!user) return []
+    return projects.filter((project) => project.ownerId === user.id || project.ownerEmail === user.email)
+  }, [projects, user])
+
   if (isLoading || loadingData) {
-    return <main className="min-h-screen bg-background px-4 py-24 text-foreground">Cargando dashboard...</main>
+    return <ProfileLogoLoader />
   }
 
   if (!isAuthenticated || !user) {
     return (
-      <main className="min-h-screen bg-background px-4 py-24 text-foreground">
-        <div className="mx-auto max-w-4xl rounded-3xl border border-border bg-card p-8">
+      <main className="min-h-screen bg-background px-4 py-14 text-foreground sm:py-16 lg:py-20">
+        <div className="mx-auto max-w-4xl rounded-2xl border border-border bg-card p-4 sm:p-6">
           <h1 className="text-2xl font-bold">Debes iniciar sesion</h1>
           <p className="mt-2 text-muted-foreground">Accede con tu cuenta para ver el dashboard de perfil.</p>
           <Link href="/" className="mt-6 inline-flex items-center gap-2 text-forest hover:underline">
@@ -223,8 +248,56 @@ export default function PerfilPage() {
     setNotice("Contrasena actualizada con exito.")
   }
 
+  const submitProject = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setNotice("")
+    setError("")
+
+    if (!projectForm.name.trim() || !projectForm.department || !projectForm.municipality || !projectForm.description.trim()) {
+      setError("Completa nombre, departamento, municipio y descripcion del proyecto.")
+      return
+    }
+
+    const location = `${projectForm.municipality}, ${projectForm.department}`
+
+    await addProject({
+      name: projectForm.name.trim(),
+      location,
+      lat: Number(projectForm.lat) || 10.4631,
+      lng: Number(projectForm.lng) || -73.2532,
+      localType: projectForm.localType,
+      description: projectForm.description.trim(),
+      hectares: Number(projectForm.hectares) || 0,
+      families: Number(projectForm.families) || 0,
+      yearStarted: Number(projectForm.yearStarted) || new Date().getFullYear(),
+      production: projectForm.production.trim() || "Pendiente por validar",
+      variety: projectForm.variety.trim() || "Pendiente por validar",
+      image: projectForm.image || "/images/cacao-pods.jpg",
+      status: "Pendiente",
+      ownerId: user.id,
+      ownerEmail: user.email,
+    })
+
+    setProjectForm({
+      name: "",
+      department: "",
+      municipality: "",
+      lat: "10.4631",
+      lng: "-73.2532",
+      localType: "Finca",
+      description: "",
+      hectares: "",
+      families: "",
+      yearStarted: String(new Date().getFullYear()),
+      production: "",
+      variety: "",
+      image: "/images/cacao-pods.jpg",
+    })
+    setNotice("Proyecto enviado para revision. Un administrador podra aprobarlo o rechazarlo.")
+  }
+
   return (
-    <main className="min-h-screen py-12">
+    <main className="min-h-screen px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
       <div className="mx-auto max-w-6xl">
         <Link href="/" className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft size={16} />
@@ -258,6 +331,9 @@ export default function PerfilPage() {
         ) : null}
 
         {activeTab === "compras" ? <PurchasesTab purchases={purchases} /> : null}
+        {activeTab === "proyecto" ? (
+          <ProjectSubmissionTab form={projectForm} setForm={setProjectForm} projects={myProjects} onSubmit={submitProject} />
+        ) : null}
         {activeTab === "perfil" ? <ProfileFormTab form={profileForm} setForm={setProfileForm} onSubmit={saveProfile} /> : null}
         {activeTab === "pagos" ? (
           <PaymentsTab
