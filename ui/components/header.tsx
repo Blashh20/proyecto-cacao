@@ -54,7 +54,7 @@ export function Header() {
     setIsLoginOpen(true)
   }
 
-  const menuItems = user?.role === "admin" ? [...navItems, { href: "/admin", label: "Admin" }] : navItems
+  const menuItems = user?.role === "admin" ? [...navItems, { href: "/#admin", label: "Admin" }] : navItems
 
   return (
     <>
@@ -132,7 +132,7 @@ export function Header() {
                     </Link>
                     {user.role === "admin" && (
                       <Link
-                        href="/admin"
+                        href="/#admin"
                         className="flex items-center gap-2 px-4 py-3 text-sm text-foreground transition-colors hover:bg-forest/10"
                       >
                         <Shield size={16} className="text-forest" />

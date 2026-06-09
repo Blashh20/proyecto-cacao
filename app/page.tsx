@@ -9,6 +9,7 @@ import { TourismSection } from "@/ui/components/tourism-section"
 import { ProductsSection } from "@/ui/components/products-section"
 import { GallerySection } from "@/ui/components/gallery-section"
 import { ContactSection } from "@/ui/components/contact-section"
+import { AdminPageContent } from "@/ui/components/admin-page-content"
 import { Footer } from "@/ui/components/footer"
 
 export default function Home() {
@@ -23,6 +24,7 @@ export default function Home() {
       <ProductsSection />
       <GallerySection />
       <ContactSection />
+      <AdminPageContent showUnauthorized={false} />
       <Footer />
     </main>
   )

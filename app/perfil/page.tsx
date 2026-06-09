@@ -206,6 +206,18 @@ export default function PerfilPage() {
       profileForm.foto_perfil_url || null
     )
 
+    setProfile({
+      id_usuario: payload.id_usuario,
+      primer_nombre: payload.primer_nombre,
+      segundo_nombre: payload.segundo_nombre,
+      primer_apellido: payload.primer_apellido,
+      segundo_apellido: payload.segundo_apellido,
+      tipo_identificacion: payload.tipo_identificacion,
+      email: payload.email,
+      telefono_celular: payload.telefono_celular,
+      rol: payload.rol,
+      foto_perfil_url: profileForm.foto_perfil_url || null,
+    })
     setNotice("Perfil actualizado correctamente.")
   }
 

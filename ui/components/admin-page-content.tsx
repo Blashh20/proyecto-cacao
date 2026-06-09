@@ -4,11 +4,21 @@ import { Shield } from "lucide-react"
 import { useAuth } from "@/controller/auth-controller"
 import { AdminProductsPanel } from "@/ui/components/admin-products-panel"
 import { AdminProjectsPanel } from "@/ui/components/admin-projects-panel"
+import { cn } from "@/ui/utils"
 
-export function AdminPageContent() {
+interface AdminPageContentProps {
+  className?: string
+  showUnauthorized?: boolean
+}
+
+export function AdminPageContent({ className, showUnauthorized = true }: AdminPageContentProps) {
   const { user, isAuthenticated } = useAuth()
 
   if (!isAuthenticated || user?.role !== "admin") {
+    if (!showUnauthorized) {
+      return null
+    }
+
     return (
       <section className="min-h-[70vh] px-4 pb-16 pt-32 sm:px-6">
         <div className="container mx-auto">
@@ -27,7 +37,7 @@ export function AdminPageContent() {
   }
 
   return (
-    <div className="pt-24">
+    <div className={cn(className)}>
       <AdminProjectsPanel />
       <AdminProductsPanel />
     </div>

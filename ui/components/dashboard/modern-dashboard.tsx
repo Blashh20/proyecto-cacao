@@ -13,7 +13,6 @@ import {
   Users,
   X,
 } from "lucide-react"
-import { PowerBIReport } from "@/ui/components/dashboard/power-bi-report"
 import { fetchDashboardData, type DashboardData } from "@/services/dashboard-service"
 
 const navItems = [
@@ -32,12 +31,6 @@ export function ModernDashboard() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState("")
-  const powerBIConfig = {
-    publicEmbedUrl: process.env.NEXT_PUBLIC_POWER_BI_PUBLIC_EMBED_URL,
-    embedUrl: process.env.NEXT_PUBLIC_POWER_BI_EMBED_URL,
-    reportId: process.env.NEXT_PUBLIC_POWER_BI_REPORT_ID,
-    accessToken: process.env.NEXT_PUBLIC_POWER_BI_ACCESS_TOKEN,
-  }
 
   useEffect(() => {
     let isMounted = true
@@ -150,16 +143,6 @@ export function ModernDashboard() {
             <section className="mt-5 grid gap-4 md:grid-cols-2">
               <MetricCard title="Empresas" value={formatCount(dashboardData?.empresas, isLoading)} detail="Empresas disponibles para el mapa" />
               <MetricCard title="Productos" value={formatCount(dashboardData?.productos, isLoading)} detail="Productos derivados registrados" />
-            </section>
-
-            <section className="mt-5">
-              <PowerBIReport
-                title="Analitica comercial"
-                publicEmbedUrl={powerBIConfig.publicEmbedUrl}
-                embedUrl={powerBIConfig.embedUrl}
-                reportId={powerBIConfig.reportId}
-                accessToken={powerBIConfig.accessToken}
-              />
             </section>
 
             <section className="mt-5 rounded-2xl border border-border bg-card p-4">

@@ -36,12 +36,14 @@ interface AuthContextType {
   isAuthenticated: boolean
   isLoading: boolean
   login: (input: LoginInput) => Promise<void>
-  loginWithProvider: (provider: Provider) => Promise<void>
+  loginWithProvider: (provider: Provider, role?: "admin" | "user") => Promise<void>
   logout: () => Promise<void>
   register: (input: RegisterInput) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const ORGANIZATION_EMAIL_DOMAIN = "@unicesar.edu.co"
+const PENDING_LOGIN_ROLE_KEY = "makakaw.pendingLoginRole"
 
 interface UsuarioRow {
   id_usuario: string
@@ -68,14 +70,23 @@ function normalizeRole(roleValue: string | null | undefined): "admin" | "user" {
   return normalized === "admin" || normalized === "administrador" || normalized === "superadministrador" ? "admin" : "user"
 }
 
+function isOrganizationEmail(email: string | null | undefined) {
+  return (email ?? "").trim().toLowerCase().endsWith(ORGANIZATION_EMAIL_DOMAIN)
+}
+
 function getRoleFromSupabaseUser(user: SupabaseUser): "admin" | "user" {
+  const email = (user.email ?? "").toLowerCase()
+
+  if (!isOrganizationEmail(email)) {
+    return "user"
+  }
+
   const metadataRole = user.user_metadata?.role ?? user.app_metadata?.role
 
   if (normalizeRole(String(metadataRole)) === "admin") {
     return "admin"
   }
 
-  const email = (user.email ?? "").toLowerCase()
   const adminEmails = getAdminEmails()
 
   if (email && adminEmails.includes(email)) {
@@ -102,30 +113,84 @@ function buildNameFromUsuario(profile: UsuarioRow | null, fallbackName: string) 
   return parts.join(" ")
 }
 
-async function getUsuarioProfile(id: string) {
-  const fields = "id, tipo_identificacion, numero_identificacion, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, email, telefono_celular, rol"
+function splitDisplayName(displayName: string) {
+  const parts = displayName.trim().split(/\s+/).filter(Boolean)
 
-  const firstTry = await supabase
-    .from("usuario")
-    .select(fields)
-    .eq("id", id)
-    .maybeSingle<UsuarioRow>()
+  return {
+    primer_nombre: parts[0] ?? null,
+    segundo_nombre: parts.length > 3 ? parts.slice(1, -2).join(" ") : null,
+    primer_apellido: parts.length > 1 ? parts[parts.length - 2] : null,
+    segundo_apellido: parts.length > 2 ? parts[parts.length - 1] : null,
+  }
+}
 
-  if (firstTry.data) {
-    return firstTry.data
+async function getUsuarioProfile(user: SupabaseUser) {
+  const fields =
+    "id_usuario, tipo_identificacion, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, email, telefono_celular, rol"
+  const candidates = [
+    String(user.user_metadata?.numero_identificacion ?? ""),
+    String(user.user_metadata?.id_usuario ?? ""),
+    user.id,
+  ].filter(Boolean)
+
+  for (const table of DICTIONARY_TABLES.usuario) {
+    for (const id of candidates) {
+      const result = await supabase
+        .from(table)
+        .select(fields)
+        .eq("id_usuario", id)
+        .maybeSingle<UsuarioRow>()
+
+      if (!result.error && result.data) return result.data
+    }
   }
 
-  const secondTry = await supabase
-    .from("Usuarios")
-    .select(fields)
-    .eq("id", id)
-    .maybeSingle<UsuarioRow>()
+  if (user.email) {
+    for (const table of DICTIONARY_TABLES.usuario) {
+      const result = await supabase
+        .from(table)
+        .select(fields)
+        .eq("email", user.email.toLowerCase())
+        .maybeSingle<UsuarioRow>()
 
-  if (secondTry.data) {
-    return secondTry.data
+      if (!result.error && result.data) return result.data
+    }
   }
 
   return null
+}
+
+async function ensureUsuarioProfile(user: SupabaseUser, existingProfile: UsuarioRow | null) {
+  const email = user.email?.trim().toLowerCase() ?? ""
+  const metadataName = user.user_metadata?.full_name ?? user.user_metadata?.name
+  const displayName =
+    typeof metadataName === "string" && metadataName.trim().length > 0
+      ? metadataName.trim()
+      : email.includes("@")
+        ? email.split("@")[0]
+        : "Usuario"
+  const names = splitDisplayName(displayName)
+  const idUsuario = existingProfile?.id_usuario ?? String(user.user_metadata?.numero_identificacion ?? user.user_metadata?.id_usuario ?? user.id)
+  const role = getRoleFromSupabaseUser(user) === "admin" ? "Administrador" : "Cliente"
+
+  const payload = {
+    id_usuario: idUsuario,
+    tipo_identificacion: existingProfile?.tipo_identificacion ?? null,
+    primer_nombre: existingProfile?.primer_nombre ?? names.primer_nombre,
+    segundo_nombre: existingProfile?.segundo_nombre ?? names.segundo_nombre,
+    primer_apellido: existingProfile?.primer_apellido ?? names.primer_apellido,
+    segundo_apellido: existingProfile?.segundo_apellido ?? names.segundo_apellido,
+    email: existingProfile?.email ?? email,
+    telefono_celular: existingProfile?.telefono_celular ?? null,
+    rol: existingProfile?.rol ?? role,
+  }
+
+  for (const table of DICTIONARY_TABLES.usuario) {
+    const result = await supabase.from(table).upsert(payload, { onConflict: "id_usuario" }).select("*").maybeSingle<UsuarioRow>()
+    if (!result.error && result.data) return result.data
+  }
+
+  return existingProfile
 }
 
 async function mapSupabaseUser(user: SupabaseUser): Promise<User> {
@@ -133,8 +198,9 @@ async function mapSupabaseUser(user: SupabaseUser): Promise<User> {
   const fallbackName = email.includes("@") ? email.split("@")[0] : "Usuario"
   const metadataName = user.user_metadata?.name ?? user.user_metadata?.full_name
   const fallbackFromMetadata = typeof metadataName === "string" && metadataName.trim().length > 0 ? metadataName : fallbackName
-  const profile = await getUsuarioProfile(user)
-  const roleFromProfile = normalizeRole(profile?.rol)
+  const existingProfile = await getUsuarioProfile(user)
+  const profile = await ensureUsuarioProfile(user, existingProfile)
+  const roleFromProfile = isOrganizationEmail(email) ? normalizeRole(profile?.rol) : "user"
 
   return {
     id: profile?.id_usuario ?? String(user.user_metadata?.numero_identificacion ?? user.user_metadata?.id_usuario ?? user.id),
@@ -161,6 +227,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const mappedUser = await mapSupabaseUser(sessionUser)
+      const pendingRole =
+        typeof window !== "undefined" ? window.localStorage.getItem(PENDING_LOGIN_ROLE_KEY) : null
+
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(PENDING_LOGIN_ROLE_KEY)
+      }
+
+      if (pendingRole === "admin" && mappedUser.role !== "admin") {
+        await supabase.auth.signOut()
+        if (!isMounted) return
+        setUser(null)
+        setIsLoading(false)
+        return
+      }
 
       if (!isMounted) return
       setUser(mappedUser)
@@ -194,6 +274,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async ({ email, password, role }: LoginInput) => {
     const normalizedEmail = email.trim().toLowerCase()
+
+    if (role === "admin" && !isOrganizationEmail(normalizedEmail)) {
+      throw new Error(`Para entrar como administrador debes usar una cuenta ${ORGANIZATION_EMAIL_DOMAIN}`)
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email: normalizedEmail,
       password,
@@ -213,7 +298,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (role === "admin" && resolvedRole !== "admin") {
       await supabase.auth.signOut()
-      throw new Error("Tu cuenta no tiene permisos de administrador")
+      throw new Error(`Tu cuenta ${ORGANIZATION_EMAIL_DOMAIN} no tiene permisos de administrador`)
     }
   }
 
@@ -224,11 +309,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const loginWithProvider = async (provider: Provider) => {
+  const loginWithProvider = async (provider: Provider, role: "admin" | "user" = "user") => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(PENDING_LOGIN_ROLE_KEY, role)
+    }
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
+        redirectTo: typeof window !== "undefined" ? `${window.location.origin}/perfil` : undefined,
       },
     })
 

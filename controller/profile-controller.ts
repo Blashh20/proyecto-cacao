@@ -26,24 +26,55 @@ export async function getProfile(userId: string): Promise<UsuarioProfile | null>
   return null
 }
 
+function mapPurchaseRow(row: Record<string, unknown>, index: number): PurchaseRow {
+  return {
+    id: String(row.id_venta ?? index + 1),
+    fecha: String(row.fecha_creacion ?? new Date().toISOString()),
+    total: Number(row.monto_total ?? 0),
+    estado: "registrada",
+    items: Number(row.cantidad ?? 0),
+  }
+}
+
 export async function getPurchases(userId: string): Promise<PurchaseRow[]> {
-  void userId
+  for (const table of DICTIONARY_TABLES.ventas) {
+    const byUser = await supabase
+      .from(table)
+      .select("id_venta, id_usuario, id_empresa, id_producto, id_region, cantidad, monto_total, fecha_creacion")
+      .eq("id_usuario", userId)
+      .order("fecha_creacion", { ascending: false })
+      .limit(20)
+
+    if (!byUser.error && Array.isArray(byUser.data)) {
+      return byUser.data.map(mapPurchaseRow)
+    }
+  }
+
+  const empresas = await supabase
+    .from(DICTIONARY_TABLES.empresa[0])
+    .select("id_empresa")
+    .eq("id_usuario", userId)
+
+  if (empresas.error || !Array.isArray(empresas.data) || empresas.data.length === 0) {
+    return []
+  }
+
+  const empresaIds = empresas.data.map((row) => String((row as Record<string, unknown>).id_empresa)).filter(Boolean)
+
+  if (empresaIds.length === 0) {
+    return []
+  }
 
   for (const table of DICTIONARY_TABLES.ventas) {
     const result = await supabase
       .from(table)
       .select("id_venta, id_empresa, id_producto, id_region, cantidad, monto_total, fecha_creacion")
+      .in("id_empresa", empresaIds)
       .order("fecha_creacion", { ascending: false })
       .limit(20)
 
     if (!result.error && Array.isArray(result.data)) {
-      return result.data.map((row: Record<string, unknown>, index) => ({
-        id: String(row.id_venta ?? index + 1),
-        fecha: String(row.fecha_creacion ?? new Date().toISOString()),
-        total: Number(row.monto_total ?? 0),
-        estado: "registrada",
-        items: Number(row.cantidad ?? 0),
-      }))
+      return result.data.map(mapPurchaseRow)
     }
   }
 

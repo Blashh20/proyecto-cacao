@@ -6,7 +6,7 @@ export default function AdminPage() {
   return (
     <main className="min-h-screen bg-background">
       <Header />
-      <AdminPageContent />
+      <AdminPageContent className="pt-24" />
       <Footer />
     </main>
   )

@@ -20,6 +20,7 @@ import {
 
 import { useAuth } from "@/controller/auth-controller"
 import { useProjects } from "@/controller/projects-controller"
+import { PowerBIReport } from "@/ui/components/dashboard/power-bi-report"
 import type { Project, ProjectGalleryImage } from "@/model/projects"
 
 // Nota: Removí imports de lucide que no se usan abajo para mantener limpio el archivo.
@@ -83,6 +84,12 @@ export function AdminProjectsPanel() {
   const [message, setMessage] = useState("")
   const [activeSection, setActiveSection] = useState<AdminSection>("resumen")
   const [isSaving, setIsSaving] = useState(false)
+  const powerBIConfig = {
+    publicEmbedUrl: process.env.NEXT_PUBLIC_POWER_BI_PUBLIC_EMBED_URL,
+    embedUrl: process.env.NEXT_PUBLIC_POWER_BI_EMBED_URL,
+    reportId: process.env.NEXT_PUBLIC_POWER_BI_REPORT_ID,
+    accessToken: process.env.NEXT_PUBLIC_POWER_BI_ACCESS_TOKEN,
+  }
 
   const metrics = useMemo(() => {
     const totalProjects = projects.length
@@ -347,6 +354,16 @@ export function AdminProjectsPanel() {
 
           {activeSection === "resumen" ? (
             <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+              <div className="xl:col-span-2">
+                <PowerBIReport
+                  title="Analitica comercial"
+                  publicEmbedUrl={powerBIConfig.publicEmbedUrl}
+                  embedUrl={powerBIConfig.embedUrl}
+                  reportId={powerBIConfig.reportId}
+                  accessToken={powerBIConfig.accessToken}
+                />
+              </div>
+
               <div className="grid gap-6 md:grid-cols-2">
                 <DashboardCard
                   title="Capacidad productiva"

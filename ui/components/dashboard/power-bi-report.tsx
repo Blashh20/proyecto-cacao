@@ -1,7 +1,16 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { AlertCircle, BarChart3, ExternalLink } from "lucide-react"
+import { AlertCircle } from "lucide-react"
+
+const DEFAULT_PUBLIC_POWER_BI_URL = process.env.NEXT_PUBLIC_POWER_BI_URL
+
+function normalizePublicPowerBIUrl(value: string | undefined) {
+  const trimmed = value?.trim()
+  if (!trimmed) return undefined
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed
+  return `https://app.powerbi.com/view?r=${trimmed}`
+}
 
 type PowerBIReportProps = {
   title: string
@@ -23,12 +32,13 @@ export function PowerBIReport({
   const [message, setMessage] = useState("")
 
   const hasSecureEmbedConfig = Boolean(embedUrl && reportId && accessToken)
-  const sanitizedPublicUrl = useMemo(() => publicEmbedUrl?.trim(), [publicEmbedUrl])
+  const sanitizedPublicUrl = useMemo(() => normalizePublicPowerBIUrl(publicEmbedUrl), [publicEmbedUrl])
+  const publicFrameUrl = sanitizedPublicUrl || (!hasSecureEmbedConfig ? DEFAULT_PUBLIC_POWER_BI_URL : undefined)
 
   useEffect(() => {
     const element = containerRef.current
 
-    if (!element || sanitizedPublicUrl || !hasSecureEmbedConfig) {
+    if (!element || publicFrameUrl || !hasSecureEmbedConfig) {
       return
     }
 
@@ -85,40 +95,11 @@ export function PowerBIReport({
       active = false
       reset?.()
     }
-  }, [accessToken, embedUrl, hasSecureEmbedConfig, reportId, sanitizedPublicUrl])
+  }, [accessToken, embedUrl, hasSecureEmbedConfig, publicFrameUrl, reportId])
 
-  if (sanitizedPublicUrl) {
+  if (publicFrameUrl) {
     return (
-      <PowerBIFrame title={title} src={sanitizedPublicUrl} />
-    )
-  }
-
-  if (!hasSecureEmbedConfig) {
-    return (
-      <article className="rounded-2xl border border-dashed border-border bg-card p-5">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-forest/15 text-forest-light">
-              <BarChart3 size={20} />
-            </div>
-            <div>
-              <h3 className="text-base font-semibold text-foreground">{title}</h3>
-              <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-                Configura el enlace de insercion de Power BI para mostrar aqui las graficas del reporte.
-              </p>
-            </div>
-          </div>
-          <a
-            href="https://app.powerbi.com/view?r=eyJrIjoiZTA5N2VkYWQtYmNiMS00YWFmLWEwZWQtOGY4MmExNTlmZjllIiwidCI6ImMyOGQyZTEyLTA5ODgtNGFjZi1iZGJhLTExOTU4MmU4ZDA4ZCIsImMiOjl9"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-background"
-          >
-            <ExternalLink size={16} />
-            Abrir Power BI
-          </a>
-        </div>
-      </article>
+      <PowerBIFrame title={title} src={publicFrameUrl} />
     )
   }
 
