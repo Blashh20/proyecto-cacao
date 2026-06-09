@@ -9,7 +9,7 @@ import type {
 import { supabase } from "@/services/client"
 import { DICTIONARY_TABLES } from "@/services/dictionary-db"
 
-export async function getProfile(userId: string): Promise<UsuarioProfile | null> {
+export async function getProfile(userId: string, userEmail?: string): Promise<UsuarioProfile | null> {
   const fields =
     "id_usuario, tipo_identificacion, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, email, telefono_celular, rol"
 
@@ -18,6 +18,22 @@ export async function getProfile(userId: string): Promise<UsuarioProfile | null>
       .from(table)
       .select(fields)
       .eq("id_usuario", userId)
+      .maybeSingle<UsuarioProfile>()
+
+    console.log(`Intentando obtener perfil desde tabla ${table}:`, result)
+
+    if (!result.error && result.data) return result.data
+  }
+
+  if (!userEmail) {
+    return null
+  }
+
+  for (const table of DICTIONARY_TABLES.usuario) {
+    const result = await supabase
+      .from(table)
+      .select(fields)
+      .eq("email", userEmail)
       .maybeSingle<UsuarioProfile>()
 
     if (!result.error && result.data) return result.data
@@ -130,13 +146,16 @@ export async function upsertInUsuarioTables(payload: {
   telefono_celular: string | null
   email: string
   rol: string
-}): Promise<{ ok: boolean }> {
+}): Promise<{ ok: boolean; error?: string }> {
+  let lastError: string | null = null
+
   for (const table of DICTIONARY_TABLES.usuario) {
     const result = await supabase.from(table).upsert(payload, { onConflict: "id_usuario" })
     if (!result.error) return { ok: true }
+    lastError = result.error.message
   }
 
-  return { ok: false }
+  return { ok: false, error: lastError ?? "Error desconocido al guardar perfil" }
 }
 
 export async function savePaymentSettings(

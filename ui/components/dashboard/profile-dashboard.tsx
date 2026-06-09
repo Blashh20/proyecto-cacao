@@ -3,6 +3,7 @@
 import { BadgeCheck, CreditCard, FileText, KeyRound, MapPin, Send, Shield, ShoppingBag, Upload, UserRound } from "lucide-react"
 import Image from "next/image"
 import { useMemo, useState, type ChangeEvent, type ReactNode, type Dispatch, type SetStateAction } from "react"
+import { uploadImage } from "@/services/upload_image"
 import type { PaymentMethodItem, PaymentSettings, PurchaseRow, Tab } from "@/model/profile"
 import type { Project } from "@/model/projects"
 import {
@@ -12,9 +13,9 @@ import {
   PRODUCTION_RANGES,
   PROJECT_TYPES,
   getMunicipalitiesByDepartment,
-} from "@/ui/components/profile/profile-catalogs"
+} from "@/ui/components/dashboard/profile-catalogs"
 
-export { ProfileLogoLoader } from "@/ui/components/profile/profile-loader"
+export { ProfileLogoLoader } from "@/ui/components/dashboard/profile-loader"
 
 export function ProfileHero({
   fullName,
@@ -46,7 +47,7 @@ export function ProfileHero({
               alt="Foto de perfil"
               width={144}
               height={144}
-              className="h-28 w-28 rounded-full border-4 border-card object-cover md:h-36 md:w-36"
+              className="h-28 w-28 rounded-full border-4 border-card object-cover md:h-36 md:w-36 z-10"
             />
             <div className="pb-2">
               <h1 className="text-2xl font-bold text-foreground md:text-3xl">{fullName}</h1>
@@ -215,23 +216,9 @@ export function ProjectSubmissionTab({
     production: string
     variety: string
     image: string
-  }) => {
-  name: string
-  department: string
-  municipality: string
-  lat: string
-  lng: string
-  localType: string
-  description: string
-  hectares: string
-  families: string
-  yearStarted: string
-  production: string
-  variety: string
-  image: string
-}) => void
+  }>>
   projects: Project[]
-onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
 }) {
   const municipalities = useMemo(() => getMunicipalitiesByDepartment(form.department), [form.department])
 
@@ -241,7 +228,7 @@ onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
 
     const reader = new FileReader()
     reader.onload = () => {
-      setForm((current) => ({ ...current, image: String(reader.result || "/images/cacao-pods.jpg") }))
+      setForm((current) => ({ ...current, image: (reader.result as string) || "/images/cacao-pods.jpg" }))
     }
     reader.readAsDataURL(file)
   }
@@ -265,7 +252,7 @@ onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
             label="Tipo de operacion"
             value={form.localType}
             onChange={(value) => setForm((s) => ({ ...s, localType: value }))}
-            options={PROJECT_TYPES.map((item) => ({ value: item, label: item }))}
+            options={PROJECT_TYPES.map((item: string) => ({ value: item, label: item }))}
           />
           <Select
             label="Departamento"
@@ -411,7 +398,31 @@ export function ProfileFormTab({
           />
           <Input label="Numero de documento" value={form.numero_identificacion} onChange={(value) => setForm((s) => ({ ...s, numero_identificacion: value }))} />
           <Input label="Telefono celular" value={form.telefono_celular} onChange={(value) => setForm((s) => ({ ...s, telefono_celular: value.replace(/[^\d+\s-]/g, "") }))} />
-          <Input label="Foto de perfil (URL)" value={form.foto_perfil_url} onChange={(value) => setForm((s) => ({ ...s, foto_perfil_url: value }))} />
+          <div>
+            <label className="block text-sm font-medium text-muted-foreground">Foto de perfil</label>
+            <div className="mt-2 flex items-center gap-4">
+              <div className="h-16 w-16 rounded-full overflow-hidden bg-background">
+                <Image src={form.foto_perfil_url || "/images/cacao-pods.jpg"} alt="Preview" width={64} height={64} className="object-cover" />
+              </div>
+              <div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e: ChangeEvent<HTMLInputElement>) => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    try {
+                      const publicUrl = await uploadImage(file)
+                      setForm((s) => ({ ...s, foto_perfil_url: publicUrl }))
+                    } catch (err) {
+                      console.error("Error subiendo imagen:", err)
+                      alert("No se pudo subir la imagen. Intenta nuevamente.")
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          </div>
           <div className="md:col-span-2">
             <button type="submit" className="inline-flex items-center gap-2 rounded-xl bg-forest px-6 py-3 font-semibold text-white hover:bg-forest-dark">
               <Shield size={16} />

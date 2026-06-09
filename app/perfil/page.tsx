@@ -16,6 +16,8 @@ import {
   updateAuthProfile,
   upsertInUsuarioTables,
 } from "@/controller/profile-controller"
+import { supabase } from "@/services/client"
+import { DICTIONARY_TABLES } from "@/services/dictionary-db"
 import type { PaymentMethodItem, PaymentSettings, PurchaseRow, Tab, UsuarioProfile } from "@/model/profile"
 import {
   ProfileHero,
@@ -26,7 +28,7 @@ import {
   SummaryTab,
   PaymentsTab,
   ProjectSubmissionTab,
-} from "@/ui/components/profile/profile-dashboard"
+} from "@/ui/components/dashboard/profile-dashboard"
 
 const tabs: { id: Tab; label: string }[] = [
   { id: "resumen", label: "Inicio" },
@@ -95,13 +97,45 @@ export default function PerfilPage() {
   })
 
   useEffect(() => {
+    const subs: any[] = []
+
+    const subscribeToProfile = (profileId: string) => {
+      for (const table of DICTIONARY_TABLES.usuario) {
+        try {
+          const channel = supabase
+            .channel(`${table}:id_usuario=eq.${profileId}`)
+            .on("postgres_changes", { event: "UPDATE", schema: "public", table }, (payload: any) => {
+              const row = payload.new ?? payload.record ?? null
+              if (!row) return
+              setProfile((prev) => ({ ...(prev ?? {}), ...(row as any) }))
+              setProfileForm((s) => ({
+                ...s,
+                primer_nombre: (row.primer_nombre as string) ?? s.primer_nombre,
+                segundo_nombre: (row.segundo_nombre as string) ?? s.segundo_nombre,
+                primer_apellido: (row.primer_apellido as string) ?? s.primer_apellido,
+                segundo_apellido: (row.segundo_apellido as string) ?? s.segundo_apellido,
+                tipo_identificacion: (row.tipo_identificacion as string) ?? s.tipo_identificacion,
+                numero_identificacion: (row.id_usuario as string) ?? s.numero_identificacion,
+                telefono_celular: (row.telefono_celular as string) ?? s.telefono_celular,
+                foto_perfil_url: (row.foto_perfil_url as string) ?? s.foto_perfil_url,
+              }))
+            })
+            .subscribe()
+
+          subs.push(channel)
+        } catch (e) {
+          // ignore subscription errors
+        }
+      }
+    }
+
     const loadAll = async () => {
       if (!user?.id) {
         setLoadingData(false)
         return
       }
 
-      const loadedProfile = await getProfile(user.id)
+      const loadedProfile = await getProfile(user.id, user.email ?? "")
       const loadedPurchases = await getPurchases(user.id)
       const loadedPayment = await getPaymentSettings(user.id)
 
@@ -123,10 +157,20 @@ export default function PerfilPage() {
         telefono_celular: loadedProfile?.telefono_celular ?? "",
         foto_perfil_url: loadedProfile?.foto_perfil_url ?? "",
       })
+
+      subscribeToProfile(loadedProfile?.id_usuario ?? user.id)
       setLoadingData(false)
     }
 
     void loadAll()
+
+    return () => {
+      for (const s of subs) {
+        try {
+          s.unsubscribe?.()
+        } catch {}
+      }
+    }
   }, [user?.id])
 
   const stats = useMemo(() => {
@@ -183,28 +227,37 @@ export default function PerfilPage() {
     setNotice("")
     setError("")
 
+    const profileId = profile?.id_usuario ?? user.id
     const payload = {
-      id_usuario: profileForm.numero_identificacion || user.id,
+      id_usuario: profileId,
       primer_nombre: profileForm.primer_nombre || null,
       segundo_nombre: profileForm.segundo_nombre || null,
       primer_apellido: profileForm.primer_apellido || null,
       segundo_apellido: profileForm.segundo_apellido || null,
       tipo_identificacion: profileForm.tipo_identificacion || null,
       telefono_celular: profileForm.telefono_celular || null,
+      foto_perfil_url: profileForm.foto_perfil_url || null,
       email: user.email,
       rol: user.role === "admin" ? "Administrador" : "Cliente",
     }
 
     const result = await upsertInUsuarioTables(payload)
     if (!result.ok) {
-      setError("No se pudo actualizar tu perfil en Supabase. Revisa la tabla Usuario y sus columnas del diccionario.")
+      setError(
+        `No se pudo actualizar tu perfil en Supabase. ${result.error ?? "Revisa la tabla Usuario y sus columnas del diccionario."}`
+      )
       return
     }
 
-    await updateAuthProfile(
+    const authUpdate = await updateAuthProfile(
       [profileForm.primer_nombre, profileForm.primer_apellido].filter(Boolean).join(" "),
       profileForm.foto_perfil_url || null
     )
+
+    if (authUpdate.error) {
+      setError(`Perfil guardado en base de datos, pero no se actualizo el perfil de auth: ${authUpdate.error.message}`)
+      return
+    }
 
     setProfile({
       id_usuario: payload.id_usuario,

@@ -115,7 +115,7 @@ export function ModernDashboard() {
                   placeholder="Buscar en Makakaw..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-4 text-sm outline-none ring-forest/30 focus:ring-2"
+                  className="w-full rounded-xl border border-border bg-input px-4 py-2.5 pl-9 pr-4 text-sm text-foreground outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/20 placeholder:text-muted-foreground"
                 />
               </div>
               <button className="relative rounded-xl border border-border p-2 text-muted-foreground">
@@ -151,7 +151,7 @@ export function ModernDashboard() {
                   <select
                     value={sortBy}
                     onChange={(event) => setSortBy(event.target.value as "fecha" | "total")}
-                    className="rounded-lg border border-border bg-background px-2 py-1.5 text-sm"
+                    className="rounded-lg border border-border bg-input px-2 py-1.5 text-sm text-foreground outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/20"
                   >
                     <option value="fecha">Fecha</option>
                     <option value="total">Total</option>
