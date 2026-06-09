@@ -2,7 +2,7 @@
 
 import { BadgeCheck, CreditCard, FileText, KeyRound, MapPin, Send, Shield, ShoppingBag, Upload, UserRound } from "lucide-react"
 import Image from "next/image"
-import { useMemo, useState, type ChangeEvent, type ReactNode } from "react"
+import { useMemo, useState, type ChangeEvent, type ReactNode, type Dispatch, type SetStateAction } from "react"
 import type { PaymentMethodItem, PaymentSettings, PurchaseRow, Tab } from "@/model/profile"
 import type { Project } from "@/model/projects"
 import {
@@ -73,9 +73,8 @@ export function ProfileHero({
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
-                activeTab === tab.id ? "bg-forest text-white" : "text-muted-foreground hover:bg-background"
-              }`}
+              className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${activeTab === tab.id ? "bg-forest text-white" : "text-muted-foreground hover:bg-background"
+                }`}
             >
               {tab.label}
             </button>
@@ -202,7 +201,7 @@ export function ProjectSubmissionTab({
     variety: string
     image: string
   }
-  setForm: (next: (prev: {
+  setForm: Dispatch<SetStateAction<{
     name: string
     department: string
     municipality: string
@@ -217,22 +216,22 @@ export function ProjectSubmissionTab({
     variety: string
     image: string
   }) => {
-    name: string
-    department: string
-    municipality: string
-    lat: string
-    lng: string
-    localType: string
-    description: string
-    hectares: string
-    families: string
-    yearStarted: string
-    production: string
-    variety: string
-    image: string
-  }) => void
+  name: string
+  department: string
+  municipality: string
+  lat: string
+  lng: string
+  localType: string
+  description: string
+  hectares: string
+  families: string
+  yearStarted: string
+  production: string
+  variety: string
+  image: string
+}) => void
   projects: Project[]
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
+onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
 }) {
   const municipalities = useMemo(() => getMunicipalitiesByDepartment(form.department), [form.department])
 
@@ -288,20 +287,8 @@ export function ProjectSubmissionTab({
           <Input label="Hectareas" type="number" value={form.hectares} onChange={(value) => setForm((s) => ({ ...s, hectares: value }))} />
           <Input label="Familias beneficiadas" type="number" value={form.families} onChange={(value) => setForm((s) => ({ ...s, families: value }))} />
           <Input label="Ano de inicio" type="number" value={form.yearStarted} onChange={(value) => setForm((s) => ({ ...s, yearStarted: value }))} />
-          <Select
-            label="Produccion estimada"
-            value={form.production}
-            onChange={(value) => setForm((s) => ({ ...s, production: value }))}
-            options={PRODUCTION_RANGES.map((item) => ({ value: item, label: item }))}
-            placeholder="Selecciona rango"
-          />
-          <Select
-            label="Variedad principal"
-            value={form.variety}
-            onChange={(value) => setForm((s) => ({ ...s, variety: value }))}
-            options={CACAO_VARIETIES.map((item) => ({ value: item, label: item }))}
-            placeholder="Selecciona variedad"
-          />
+          <Input label="Produccion estimada" value={form.production} onChange={(value) => setForm((s) => ({ ...s, production: value }))} placeholder="45 toneladas/ano" />
+          <Input label="Variedad principal" value={form.variety} onChange={(value) => setForm((s) => ({ ...s, variety: value }))} />
           <label className="block">
             <span className="mb-2 block text-sm font-medium text-foreground">Imagen del proyecto</span>
             <input
@@ -552,9 +539,8 @@ export function PaymentsTab({
               <button
                 type="button"
                 onClick={() => setPrimary(method.id)}
-                className={`rounded-md px-2 py-1 text-xs font-semibold ${
-                  method.principal ? "bg-forest/20 text-forest-light" : "border border-border text-muted-foreground"
-                }`}
+                className={`rounded-md px-2 py-1 text-xs font-semibold ${method.principal ? "bg-forest/20 text-forest-light" : "border border-border text-muted-foreground"
+                  }`}
               >
                 {method.principal ? "Principal" : "Hacer principal"}
               </button>

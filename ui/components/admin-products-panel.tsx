@@ -38,11 +38,14 @@ export function AdminProductsPanel() {
   useEffect(() => {
     if (user?.role !== "admin") return
 
+    // 1. Escuchar evento de Editar Producto
     const handleEditProduct = (e: CustomEvent<any>) => {
       const product = e.detail
       if (!product) return
 
-      // Populate form
+        // Guardamos una referencia temporal rápida
+        ; (window as any)._currentEditingProduct = product
+
       setForm({
         nombre_derivado: product.nombre_derivado ?? "",
         descripcion: product.descripcion ?? "",
@@ -62,9 +65,76 @@ export function AdminProductsPanel() {
       }
     }
 
+    // 2. Escuchar evento de cambiar Destacado (Estrella)
+    const handleToggleStar = async (e: Event) => {
+      const product = (e as CustomEvent).detail
+      if (!product) return
+
+      const { error } = await supabase
+        .from("productos_derivados")
+        .update({ estrella: !product.estrella })
+        .eq("id_producto", product.id_producto)
+
+      if (!error) {
+        window.dispatchEvent(new CustomEvent("product-saved"))
+      } else {
+        console.error("Error al actualizar estrella:", error.message)
+      }
+    }
+
+    // 3. Escuchar evento de Ocultar / Activar Producto
+    const handleToggleActive = async (e: Event) => {
+      const product = (e as CustomEvent).detail
+      if (!product) return
+
+      const { error } = await supabase
+        .from("productos_derivados")
+        .update({ activo: product.activo === false ? true : false })
+        .eq("id_producto", product.id_producto)
+
+      if (!error) {
+        window.dispatchEvent(new CustomEvent("product-saved"))
+      } else {
+        console.error("Error al actualizar estado activo:", error.message)
+      }
+    }
+
+    // 4. Escuchar evento de Eliminar Producto
+    const handleEliminar = async (e: Event) => {
+      const product = (e as CustomEvent).detail
+      if (!product) return
+
+      // Cambiamos el mensaje para advertir que se desactivará del catálogo
+      const confirmar = window.confirm(`¿Seguro que deseas dar de baja el producto "${product.nombre_derivado}" del catálogo?`)
+      if (!confirmar) return
+
+      try {
+        // En lugar de borrar la fila, hacemos un borrado lógico poniendo activo en false
+        const { error } = await supabase
+          .from("productos_derivados")
+          .update({ activo: false })
+          .eq("id_producto", product.id_producto)
+
+        if (!error) {
+          window.dispatchEvent(new CustomEvent("product-saved"))
+        } else {
+          alert(`No se pudo dar de baja el producto: ${error.message}`)
+        }
+      } catch (err) {
+        console.error("Error en el flujo de eliminación:", err)
+      }
+    }
+
     window.addEventListener("edit-product" as any, handleEditProduct)
+    window.addEventListener("toggle-product-star" as any, handleToggleStar)
+    window.addEventListener("toggle-product-active" as any, handleToggleActive)
+    window.addEventListener("delete-product" as any, handleEliminar)
+
     return () => {
       window.removeEventListener("edit-product" as any, handleEditProduct)
+      window.removeEventListener("toggle-product-star" as any, handleToggleStar)
+      window.removeEventListener("toggle-product-active" as any, handleToggleActive)
+      window.removeEventListener("delete-product" as any, handleEliminar)
     }
   }, [user])
 
@@ -89,8 +159,6 @@ export function AdminProductsPanel() {
     setImageFile(null)
     setImagePreview(null)
     if (fileInputRef.current) fileInputRef.current.value = ""
-    // If we are editing, we don't necessarily delete the reference, just don't send a new one
-    // unless the user uploads another one. We will preserve existingGaleriaId if they don't change it.
   }
 
   const handleCancelEdit = () => {
@@ -100,6 +168,9 @@ export function AdminProductsPanel() {
     removeImage()
     setMessage("")
     setErrorMessage("")
+
+    // Al cancelar la edición, notificamos globalmente para resetear estados en las tarjetas si fuese necesario
+    window.dispatchEvent(new CustomEvent("product-saved"))
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -167,6 +238,12 @@ export function AdminProductsPanel() {
         categoria: form.categoria.trim(),
       }
 
+      // Si estás editando, preservamos sus estados actuales de estrella/activo
+      if (editingId) {
+        payload.estrella = (window as any)._currentEditingProduct?.estrella ?? false
+        payload.activo = (window as any)._currentEditingProduct?.activo ?? true
+      }
+
       // If we have a gallery ID (either existing or newly created/updated), send it
       if (id_galeria_foto) {
         payload.id_galeria_foto = id_galeria_foto
@@ -207,7 +284,7 @@ export function AdminProductsPanel() {
       window.dispatchEvent(new CustomEvent("product-saved"))
     } catch (err) {
       setErrorMessage(`Error inesperado: ${String(err)}`)
-    } finally {
+    } finally { //   Sintaxis correcta de JavaScript
       setIsSaving(false)
     }
   }
@@ -228,8 +305,7 @@ export function AdminProductsPanel() {
               <p className="mt-2 text-muted-foreground">
                 {editingId
                   ? "Modifica los campos del producto seleccionado y guarda los cambios."
-                  : "Este formulario inserta directamente en Supabase (productos_derivados)."
-                }
+                  : "Este formulario inserta directamente en Supabase (productos_derivados)."}
               </p>
             </div>
             {editingId && (
@@ -239,7 +315,7 @@ export function AdminProductsPanel() {
                 className="inline-flex items-center gap-2 self-start sm:self-center rounded-xl border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition hover:bg-muted"
               >
                 <RotateCcw size={16} />
-                Cancelar edición
+                Cancelar y regresar
               </button>
             )}
           </div>
@@ -252,7 +328,7 @@ export function AdminProductsPanel() {
                   value={form.nombre_derivado}
                   onChange={handleChange("nombre_derivado")}
                   required
-                  placeholder='Ej: Chocolate amargo 70%'
+                  placeholder="Ej: Chocolate amargo 70%"
                   className={inputClassName}
                 />
               </Field>
@@ -358,4 +434,3 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
     </label>
   )
 }
-

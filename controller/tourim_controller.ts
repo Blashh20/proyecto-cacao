@@ -21,6 +21,11 @@ export type TouristRouteDto = {
   nivel_dificultad: string
   id_empresa?: string
   nombre_empresa?: string
+  imagen_url?: string
+  images?: string[]   // parsed from imagen_url comma-separated
+  activa?: boolean
+  destacada?: boolean
+  calificacion?: number
   points: RoutePointDto[]
 }
 
@@ -89,6 +94,9 @@ const buildRoutesFromTables = (
     const companyId = asString(route.id_empresa)
     const points = (pointsByRouteId.get(routeId) ?? []).sort((a, b) => a.orden - b.orden)
 
+    const rawImagenUrl = asString(route.imagen_url)
+    const images = rawImagenUrl ? rawImagenUrl.split(",").map(s => s.trim()).filter(Boolean) : undefined
+
     return {
       id_ruta: routeId,
       nombre_ruta: asString(route.nombre_ruta, "Ruta turística"),
@@ -97,6 +105,11 @@ const buildRoutesFromTables = (
       nivel_dificultad: asString(route.nivel_dificultad, "Medio"),
       id_empresa: companyId || undefined,
       nombre_empresa: companiesById.get(companyId) || undefined,
+      imagen_url: rawImagenUrl || undefined,
+      images,
+      destacada: route.destacada === true,
+      activa: route.activa !== false,
+      calificacion: asNumber(route.calificacion, 5),
       points,
     }
   })
@@ -105,7 +118,7 @@ const buildRoutesFromTables = (
 const getRoutesFromDictionaryTables = async () => {
   const routesRes = await supabase
     .from("rutas_turisticas")
-    .select("id_ruta, nombre_ruta, distancia_total, tiempo_estimado, nivel_dificultad, id_empresa")
+    .select("id_ruta, nombre_ruta, distancia_total, tiempo_estimado, nivel_dificultad, id_empresa, nit_empresa, imagen_url, destacada, activa, calificacion")
     .order("nombre_ruta", { ascending: true })
 
   if (routesRes.error || !Array.isArray(routesRes.data)) {

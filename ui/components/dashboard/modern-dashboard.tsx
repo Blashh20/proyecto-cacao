@@ -81,28 +81,25 @@ export function ModernDashboard() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="flex">
+        {/* Sidebar */}
         <aside
-          className={`fixed inset-y-0 left-0 z-40 w-72 border-r border-border bg-card p-4 transition-transform lg:static lg:translate-x-0 ${
-            sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+          className={`fixed inset-y-0 left-0 z-40 w-72 border-r border-border bg-card p-4 transition-transform lg:static lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
         >
           <div className="mb-8 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-foreground">Dashboard</h2>
+            <h2 className="text-xl font-bold text-foreground">Makakaw Admin</h2>
             <button className="rounded-md p-2 text-muted-foreground lg:hidden" onClick={() => setSidebarOpen(false)}>
               <X size={18} />
             </button>
           </div>
 
           <nav className="space-y-2">
-            {navItems.map((item, index) => {
+            {navItems.map((item) => {
               const Icon = item.icon
-              const isActive = index === 0
               return (
                 <button
                   key={item.label}
-                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
-                    isActive ? "bg-forest/15 text-forest-light" : "text-muted-foreground hover:bg-background"
-                  }`}
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-muted-foreground transition hover:bg-background"
                 >
                   <Icon size={18} />
                   {item.label}
@@ -112,6 +109,7 @@ export function ModernDashboard() {
           </nav>
         </aside>
 
+        {/* Contenido Principal */}
         <div className="w-full lg:ml-0">
           <header className="sticky top-0 z-30 border-b border-border bg-card/90 backdrop-blur">
             <div className="flex items-center gap-3 px-4 py-3 md:px-6">
@@ -121,20 +119,20 @@ export function ModernDashboard() {
               <div className="relative w-full max-w-xl">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
-                  placeholder="Buscar orden, cliente o estado..."
+                  placeholder="Buscar en Makakaw..."
                   value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-4 text-sm outline-none ring-forest/30 transition focus:ring-2"
+                  onChange={(e) => setQuery(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-4 text-sm outline-none ring-forest/30 focus:ring-2"
                 />
               </div>
               <button className="relative rounded-xl border border-border p-2 text-muted-foreground">
                 <Bell size={18} />
-                <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-forest-light" />
               </button>
             </div>
           </header>
 
           <main className="px-4 py-5 md:px-6">
+            {/* Tarjetas de Métricas (Aquí llamarías a tu estado de Supabase) */}
             <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               <MetricCard title="Ventas registradas" value={formatCount(dashboardData?.ventas, isLoading)} detail="Registros reales en tabla ventas" />
               <MetricCard title="Usuarios" value={formatCount(dashboardData?.usuarios, isLoading)} detail="Cuentas registradas en usuarios" />
@@ -215,8 +213,6 @@ export function ModernDashboard() {
           </main>
         </div>
       </div>
-
-      {sidebarOpen ? <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setSidebarOpen(false)} /> : null}
     </div>
   )
 }
@@ -233,7 +229,7 @@ function formatCurrency(value: number | undefined, isLoading: boolean) {
 
 function MetricCard({ title, value, detail }: { title: string; value: string; detail: string }) {
   return (
-    <article className="rounded-2xl border border-border bg-card p-4">
+    <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
       <p className="text-sm text-muted-foreground">{title}</p>
       <p className="mt-1 text-2xl font-bold text-foreground">{value}</p>
       <p className="mt-2 text-xs text-forest-light">{detail}</p>

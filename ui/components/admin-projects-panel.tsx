@@ -1,6 +1,6 @@
 ﻿"use client"
 
-import { useMemo, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react"
 import { parseProduction, calculateYield } from "@/controller/admin-projects-panel-controller"
 import dynamic from "next/dynamic"
 import {
@@ -9,25 +9,49 @@ import {
   CheckCircle2,
   Factory,
   Globe2,
+  ImagePlus,
   Leaf,
   LineChart,
+  MapPin,
+  MoreVertical,
+  Navigation,
   PlusCircle,
+  Route,
   ShieldCheck,
   Sprout,
+  Star,
+  Trash2,
   TrendingUp,
   Upload,
+  X,
 } from "lucide-react"
 
 import { useAuth } from "@/controller/auth-controller"
 import { useProjects } from "@/controller/projects-controller"
 import type { Project, ProjectGalleryImage } from "@/model/projects"
-
-// Nota: Removí imports de lucide que no se usan abajo para mantener limpio el archivo.
-// Si los usas en subcomponentes externos (como CsvImportSection), asegúrate de que estén importados allá.
+import {
+  deleteTourismRoute,
+  estimateTime,
+  haversineKm,
+  loadAllRoutes,
+  loadEmpresas,
+  saveTourismRoute,
+  toggleActivaRoute,
+  toggleDestacadaRoute,
+  type EmpresaOption,
+  type SavedTourismRoute,
+  type TourismRouteFormData,
+  type TourismRoutePoint,
+} from "@/controller/admin-tourism-controller"
 
 const AdminMapLeaflet = dynamic(() => import("@/ui/components/admin-map-leaflet").then((mod) => mod.AdminMapLeaflet), {
   ssr: false,
 })
+
+const TourismAdminMapLeaflet = dynamic(
+  () => import("@/ui/components/tourism-admin-map-leaflet").then((mod) => mod.TourismAdminMapLeaflet),
+  { ssr: false }
+)
 
 interface FormState {
   id: number | null
@@ -46,7 +70,7 @@ interface FormState {
   gallery: ProjectGalleryImage[]
 }
 
-type AdminSection = "resumen" | "proyectos" | "produccion" | "mercado" | "importar"
+type AdminSection = "resumen" | "proyectos" | "produccion" | "mercado" | "importar" | "rutas";
 
 const initialFormState: FormState = {
   id: null,
@@ -74,6 +98,7 @@ const adminSections: { id: AdminSection; label: string; icon: React.ComponentTyp
   { id: "produccion", label: "Produccion", icon: Factory },
   { id: "mercado", label: "Mercado", icon: Globe2 },
   { id: "importar", label: "Importar CSV", icon: Upload },
+  { id: "rutas", label: "Rutas Turísticas", icon: Route },
 ]
 
 export function AdminProjectsPanel() {
@@ -710,9 +735,628 @@ export function AdminProjectsPanel() {
               ))}
             </div>
           ) : null}
+
+          {activeSection === "rutas" ? (
+            <AdminTourismSection />
+          ) : null}
         </div>
       </div>
     </section>
+  )
+}
+// ==========================================
+// ADMIN TOURISM SECTION
+// ==========================================
+
+const DIFFICULTY_OPTIONS = ["Bajo", "Medio", "Alto", "Extremo"]
+const POINT_TYPES = ["Entrada", "Salida", "Mirador", "Cafetal", "Cacaotal", "Cascada", "Pueblo", "Centro de acopio", "Punto de interés"]
+
+const initialRouteForm: TourismRouteFormData = {
+  nombre_ruta: "",
+  distancia_total: 0,
+  nivel_dificultad: "Medio",
+  tiempo_estimado: "",
+  nit_empresa: "",
+  imagen_url: "",
+  puntoA: null,
+  puntoB: null,
+}
+
+function AdminTourismSection() {
+  const inputCls = "w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/20"
+
+  const [routeForm, setRouteForm] = useState<TourismRouteFormData>(initialRouteForm)
+  const [editingId, setEditingId] = useState<string | undefined>(undefined)
+  const [selectMode, setSelectMode] = useState<"A" | "B" | null>(null)
+  const [pendingPointType, setPendingPointType] = useState("Entrada")
+  const [pendingPointName, setPendingPointName] = useState("")
+  const [savedRoutes, setSavedRoutes] = useState<SavedTourismRoute[]>([])
+  const [empresas, setEmpresas] = useState<EmpresaOption[]>([])
+  const [isSaving, setIsSaving] = useState(false)
+  const [message, setMessage] = useState("")
+  const [imageFiles, setImageFiles] = useState<File[]>([])
+  const [imagePreviews, setImagePreviews] = useState<string[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Load existing routes and empresas on mount
+  useEffect(() => {
+    void loadAllRoutes().then(setSavedRoutes)
+    void loadEmpresas().then(setEmpresas)
+  }, [])
+
+  const handleMapClick = useCallback(
+    (lat: number, lng: number) => {
+      if (!selectMode) return
+      const newPoint: TourismRoutePoint = {
+        nombre_lugar: pendingPointName || (selectMode === "A" ? "Punto de entrada" : "Punto de salida"),
+        latitud: lat,
+        longitud: lng,
+        tipo_punto: pendingPointType,
+      }
+      setRouteForm((f) => {
+        const next = { ...f, [selectMode === "A" ? "puntoA" : "puntoB"]: newPoint }
+        const a = selectMode === "A" ? newPoint : f.puntoA
+        const b = selectMode === "B" ? newPoint : f.puntoB
+        if (a && b) {
+          const km = Math.round(haversineKm(a.latitud, a.longitud, b.latitud, b.longitud) * 10) / 10
+          next.distancia_total = km
+          next.tiempo_estimado = estimateTime(km, f.nivel_dificultad)
+        }
+        return next
+      })
+      setSelectMode(null)
+    },
+    [selectMode, pendingPointName, pendingPointType]
+  )
+
+  const compressToWebP = (file: File): Promise<Blob> =>
+    new Promise((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => {
+        const MAX = 1200
+        let { width, height } = img
+        if (width > MAX) { height = Math.round(height * MAX / width); width = MAX }
+        const canvas = document.createElement("canvas")
+        canvas.width = width; canvas.height = height
+        canvas.getContext("2d")!.drawImage(img, 0, 0, width, height)
+        canvas.toBlob((b) => b ? resolve(b) : reject(new Error("Compression failed")), "image/webp", 0.82)
+      }
+      img.onerror = reject
+      img.src = URL.createObjectURL(file)
+    })
+
+  const handleFilesSelected = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? [])
+    if (!files.length) return
+    const newFiles = [...imageFiles, ...files].slice(0, 8)
+    setImageFiles(newFiles)
+    setImagePreviews(newFiles.map((f) => URL.createObjectURL(f)))
+    if (fileInputRef.current) fileInputRef.current.value = ""
+  }
+
+  const removeImage = (index: number) => {
+    setImageFiles((prev) => prev.filter((_, i) => i !== index))
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleSave = async () => {
+    if (!routeForm.nombre_ruta.trim()) { setMessage("El nombre de la ruta es obligatorio."); return }
+    if (!routeForm.nit_empresa) { setMessage("Debes seleccionar una empresa operadora."); return }
+    if (!routeForm.puntoA || !routeForm.puntoB) { setMessage("Debes marcar el Punto A (entrada) y el Punto B (salida) en el mapa."); return }
+    setIsSaving(true)
+    setMessage("")
+
+    // Upload images to Supabase Storage
+    let uploadedUrls: string[] = []
+    if (imageFiles.length > 0) {
+      const { createClient } = await import("@supabase/supabase-js")
+      const supa = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      for (const file of imageFiles) {
+        try {
+          const blob = await compressToWebP(file)
+          const path = `rutas/${Date.now()}-${Math.random().toString(36).slice(2)}.webp`
+          const { error: upErr } = await supa.storage.from("Galeria").upload(path, blob, { upsert: true, contentType: "image/webp" })
+          if (!upErr) {
+            const { data } = supa.storage.from("Galeria").getPublicUrl(path)
+            uploadedUrls.push(data.publicUrl)
+          }
+        } catch { /* skip failed */ }
+      }
+    }
+
+    const formWithImages: TourismRouteFormData = {
+      ...routeForm,
+      imagen_url: uploadedUrls.length > 0 ? uploadedUrls.join(",") : routeForm.imagen_url,
+    }
+
+    const result = await saveTourismRoute(formWithImages, editingId)
+    setMessage(result.message)
+    if (result.success) {
+      setRouteForm(initialRouteForm)
+      setEditingId(undefined)
+      setImageFiles([])
+      setImagePreviews([])
+      const routes = await loadAllRoutes()
+      setSavedRoutes(routes)
+      window.dispatchEvent(new CustomEvent("route-saved"))
+    }
+    setIsSaving(false)
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("¿Eliminar esta ruta turística?")) return
+    const result = await deleteTourismRoute(id)
+    setMessage(result.message)
+    if (result.success) {
+      setSavedRoutes((prev) => prev.filter((r) => r.id_ruta !== id))
+      window.dispatchEvent(new CustomEvent("route-saved"))
+    }
+  }
+
+  const handleClear = () => {
+    setRouteForm(initialRouteForm)
+    setEditingId(undefined)
+    setSelectMode(null)
+    setMessage("")
+    setImageFiles([])
+    setImagePreviews([])
+  }
+
+  const pointA = routeForm.puntoA ? { lat: routeForm.puntoA.latitud, lng: routeForm.puntoA.longitud } : null
+  const pointB = routeForm.puntoB ? { lat: routeForm.puntoB.latitud, lng: routeForm.puntoB.longitud } : null
+
+  return (
+    <div className="space-y-8">
+      {/* Map */}
+      <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-forest/5 to-forest/10 p-4">
+        {/* Legend */}
+        <div className="absolute left-6 top-6 z-[1000] flex flex-col gap-2 rounded-xl border border-border bg-background/95 px-4 py-3 shadow-lg backdrop-blur-sm">
+          <p className="text-sm font-semibold text-foreground">Mapa de ruta turística</p>
+          <div className="flex gap-3 text-xs">
+            <span className="flex items-center gap-1.5">
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-green-500 text-[10px] font-bold text-white">A</span>
+              {routeForm.puntoA ? routeForm.puntoA.nombre_lugar : "Sin entrada"}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">B</span>
+              {routeForm.puntoB ? routeForm.puntoB.nombre_lugar : "Sin salida"}
+            </span>
+          </div>
+        </div>
+
+        {/* Cursor hint */}
+        {selectMode && (
+          <div className="absolute bottom-12 left-1/2 z-[1000] -translate-x-1/2 rounded-full border border-border bg-background/95 px-5 py-2 text-sm font-medium text-foreground shadow-lg backdrop-blur-sm">
+            Haz clic en el mapa para marcar el punto <strong className={selectMode === "A" ? "text-green-500" : "text-red-500"}>{selectMode === "A" ? "A - Entrada" : "B - Salida"}</strong>
+          </div>
+        )}
+
+        <div className="h-[380px] w-full">
+          <TourismAdminMapLeaflet
+            pointA={pointA}
+            pointB={pointB}
+            selectMode={selectMode}
+            onMapClick={handleMapClick}
+          />
+        </div>
+      </div>
+
+      {/* Selector controls */}
+      <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-4">
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">Nombre del punto</label>
+          <input
+            value={pendingPointName}
+            onChange={(e) => setPendingPointName(e.target.value)}
+            placeholder="ej. Finca El Paraíso"
+            className="rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-forest focus:ring-2 focus:ring-forest/20"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium text-muted-foreground">Tipo de punto</label>
+          <select
+            value={pendingPointType}
+            onChange={(e) => setPendingPointType(e.target.value)}
+            className="rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-forest"
+          >
+            {POINT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </div>
+        <button
+          type="button"
+          onClick={() => setSelectMode(selectMode === "A" ? null : "A")}
+          className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all ${selectMode === "A"
+            ? "bg-green-500 text-white shadow-lg"
+            : routeForm.puntoA
+              ? "bg-green-500/10 text-green-400 hover:bg-green-500/20"
+              : "bg-green-500 text-white"
+            }`}
+        >
+          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/25 text-xs font-bold">A</span>
+          {selectMode === "A" ? "Cancelar" : routeForm.puntoA ? "Reubicar A" : "Marcar entrada"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setSelectMode(selectMode === "B" ? null : "B")}
+          className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all ${selectMode === "B"
+            ? "bg-red-500 text-white shadow-lg"
+            : routeForm.puntoB
+              ? "bg-red-500/10 text-red-400 hover:bg-red-500/20"
+              : "bg-red-500 text-white"
+            }`}
+        >
+          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/25 text-xs font-bold">B</span>
+          {selectMode === "B" ? "Cancelar" : routeForm.puntoB ? "Reubicar B" : "Marcar salida"}
+        </button>
+        {(routeForm.puntoA || routeForm.puntoB) && (
+          <button
+            type="button"
+            onClick={() => setRouteForm((f) => ({ ...f, puntoA: null, puntoB: null }))}
+            className="rounded-xl border border-border px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground"
+          >
+            Limpiar puntos
+          </button>
+        )}
+      </div>
+
+      {/* Form + List */}
+      <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+        {/* Form */}
+        <div className="space-y-5 rounded-3xl border border-border bg-card p-6 md:p-8">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-forest/10 text-forest">
+              <Route size={22} />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-foreground">{editingId ? "Editar ruta" : "Nueva ruta turística"}</h3>
+              <p className="text-sm text-muted-foreground">Completa los datos y marca los puntos en el mapa.</p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="Nombre de la ruta">
+              <input
+                value={routeForm.nombre_ruta}
+                onChange={(e) => setRouteForm((f) => ({ ...f, nombre_ruta: e.target.value }))}
+                required
+                placeholder="ej. Ruta del Cacao Sagrado"
+                className={inputCls}
+              />
+            </Field>
+
+            <Field label="Dificultad">
+              <select
+                value={routeForm.nivel_dificultad}
+                onChange={(e) => setRouteForm((f) => ({ ...f, nivel_dificultad: e.target.value }))}
+                className={inputCls}
+              >
+                {DIFFICULTY_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </Field>
+
+            <Field label="Distancia total (km)">
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                value={routeForm.distancia_total}
+                onChange={(e) => setRouteForm((f) => ({ ...f, distancia_total: Number(e.target.value) }))}
+                className={inputCls}
+              />
+            </Field>
+
+            <Field label="Tiempo estimado">
+              <input
+                value={routeForm.tiempo_estimado}
+                onChange={(e) => setRouteForm((f) => ({ ...f, tiempo_estimado: e.target.value }))}
+                placeholder="ej. 3 horas"
+                className={inputCls}
+              />
+            </Field>
+
+            <Field label="Empresa operadora">
+              <select
+                value={routeForm.nit_empresa}
+                onChange={(e) => setRouteForm((f) => ({ ...f, nit_empresa: e.target.value }))}
+                className={inputCls}
+              >
+                <option value="">Selecciona una empresa</option>
+                {empresas.map((emp) => (
+                  <option key={emp.id_empresa} value={emp.nit}>
+                    {emp.nombre_comercial} — {emp.nit}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+          </div>
+
+          {/* Image uploader */}
+          <div className="md:col-span-2">
+            <p className="mb-2 text-sm font-medium text-foreground">Imágenes de la ruta (máx. 8)</p>
+            <div className="flex flex-wrap gap-3">
+              {imagePreviews.map((src, i) => (
+                <div key={i} className="relative h-24 w-24 overflow-hidden rounded-xl border border-border shadow-sm">
+                  <img src={src} alt={`img-${i}`} className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(i)}
+                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white hover:bg-red-500"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+              {imagePreviews.length < 8 && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border text-muted-foreground transition hover:border-forest hover:text-forest"
+                >
+                  <ImagePlus size={20} />
+                  <span className="text-xs">Agregar</span>
+                </button>
+              )}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFilesSelected}
+              className="hidden"
+            />
+            <p className="mt-2 text-xs text-muted-foreground">Se comprimen a WebP y se suben al Storage de Supabase.</p>
+          </div>
+
+          {/* Point summary */}
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className={`rounded-xl border p-3 ${routeForm.puntoA ? "border-green-500/30 bg-green-500/5" : "border-dashed border-border"
+              }`}>
+              <p className="text-xs font-semibold uppercase tracking-wider text-green-500">Punto A — Entrada</p>
+              {routeForm.puntoA ? (
+                <>
+                  <p className="mt-1 font-medium text-foreground">{routeForm.puntoA.nombre_lugar}</p>
+                  <p className="text-xs text-muted-foreground">{routeForm.puntoA.tipo_punto} · {routeForm.puntoA.latitud.toFixed(5)}, {routeForm.puntoA.longitud.toFixed(5)}</p>
+                </>
+              ) : (
+                <p className="mt-1 text-sm text-muted-foreground">Sin marcar — usa el botón A arriba</p>
+              )}
+            </div>
+            <div className={`rounded-xl border p-3 ${routeForm.puntoB ? "border-red-500/30 bg-red-500/5" : "border-dashed border-border"
+              }`}>
+              <p className="text-xs font-semibold uppercase tracking-wider text-red-500">Punto B — Salida</p>
+              {routeForm.puntoB ? (
+                <>
+                  <p className="mt-1 font-medium text-foreground">{routeForm.puntoB.nombre_lugar}</p>
+                  <p className="text-xs text-muted-foreground">{routeForm.puntoB.tipo_punto} · {routeForm.puntoB.latitud.toFixed(5)}, {routeForm.puntoB.longitud.toFixed(5)}</p>
+                </>
+              ) : (
+                <p className="mt-1 text-sm text-muted-foreground">Sin marcar — usa el botón B arriba</p>
+              )}
+            </div>
+          </div>
+
+          {message && (
+            <div className="rounded-xl border border-forest/30 bg-forest/10 px-4 py-3 text-sm text-foreground">{message}</div>
+          )}
+
+          <div className="flex gap-3">
+            <button
+              type="button"
+              disabled={isSaving}
+              onClick={handleSave}
+              className="inline-flex items-center gap-2 rounded-xl bg-forest px-6 py-3 font-semibold text-white transition-colors hover:bg-forest-dark disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Navigation size={18} />
+              {isSaving ? "Guardando..." : editingId ? "Actualizar ruta" : "Guardar ruta"}
+            </button>
+            {editingId && (
+              <button
+                type="button"
+                onClick={handleClear}
+                className="rounded-xl border border-border px-5 py-3 text-sm text-muted-foreground hover:text-foreground"
+              >
+                Cancelar edición
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Routes list */}
+        <DashboardCard
+          title="Rutas registradas"
+          icon={<Route size={20} className="text-forest" />}
+          description="Listado de rutas turísticas en el sistema."
+        >
+          <div className="max-h-[520px] space-y-3 overflow-y-auto pr-2">
+            {savedRoutes.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No hay rutas registradas aún.</p>
+            ) : (
+              savedRoutes.map((route) => (
+                <RouteCard
+                  key={route.id_ruta}
+                  route={route}
+                  isEditing={editingId === route.id_ruta}
+                  onEdit={() => {
+                    setEditingId(route.id_ruta)
+                    setRouteForm({
+                      nombre_ruta: route.nombre_ruta,
+                      distancia_total: route.distancia_total,
+                      nivel_dificultad: route.nivel_dificultad,
+                      tiempo_estimado: route.tiempo_estimado,
+                      nit_empresa: route.nit_empresa ?? "",
+                      imagen_url: route.imagen_url ?? "",
+                      puntoA: null,
+                      puntoB: null,
+                    })
+                    setMessage("Editando ruta. Puedes remarcar los puntos A/B en el mapa.")
+                  }}
+                  onDelete={() => void handleDelete(route.id_ruta)}
+                  onRouteChange={(updated) =>
+                    setSavedRoutes((prev) =>
+                      prev.map((r) => (r.id_ruta === updated.id_ruta ? updated : r))
+                    )
+                  }
+                />
+              ))
+            )}
+          </div>
+        </DashboardCard>
+      </div>
+    </div>
+  )
+}
+
+// ==========================================
+// ROUTE CARD — menú de acciones igual que productos
+// ==========================================
+function RouteCard({
+  route,
+  isEditing,
+  onEdit,
+  onDelete,
+  onRouteChange,
+}: {
+  route: SavedTourismRoute
+  isEditing: boolean
+  onEdit: () => void
+  onDelete: () => void
+  onRouteChange: (updated: SavedTourismRoute) => void
+}) {
+  const menuRef = useRef<HTMLDivElement>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [isDestacada, setIsDestacada] = useState(!!route.destacada)
+  const [isActiva, setIsActiva] = useState(route.activa !== false)
+
+  // Sync if parent re-renders with fresh data
+  useEffect(() => {
+    setIsDestacada(!!route.destacada)
+    setIsActiva(route.activa !== false)
+  }, [route])
+
+  // Close on outside click
+  useEffect(() => {
+    if (!menuOpen) return
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false)
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [menuOpen])
+
+  const handleToggleDestacada = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setMenuOpen(false)
+    const next = !isDestacada
+    setIsDestacada(next)
+    const { success } = await toggleDestacadaRoute(route.id_ruta, next)
+    if (!success) setIsDestacada(!next) // revert on failure
+    else onRouteChange({ ...route, destacada: next })
+  }
+
+  const handleToggleActiva = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setMenuOpen(false)
+    const next = !isActiva
+    setIsActiva(next)
+    const { success } = await toggleActivaRoute(route.id_ruta, next)
+    if (!success) setIsActiva(!next) // revert on failure
+    else onRouteChange({ ...route, activa: next })
+  }
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setMenuOpen(false)
+    onEdit()
+  }
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setMenuOpen(false)
+    onDelete()
+  }
+
+  return (
+    <article
+      className={`relative rounded-2xl border bg-background p-4 transition-colors ${isEditing ? "border-forest bg-forest/5" : isDestacada ? "border-amber-400/60 shadow-[0_0_16px_rgba(251,191,36,0.1)]" : "border-border"
+        } ${!isActiva ? "opacity-50" : ""}`}
+    >
+      {/* Destacada badge */}
+      {isDestacada && (
+        <div className="absolute left-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-amber-400 shadow">
+          <Star size={12} fill="currentColor" className="text-neutral-900" />
+        </div>
+      )}
+
+      {/* Oculta overlay */}
+      {!isActiva && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl border border-dashed border-red-500/20 bg-background/60 backdrop-blur-[2px]">
+          <span className="flex items-center gap-1.5 rounded-full bg-red-500 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white shadow">
+            <EyeOff size={12} /> Oculta al público
+          </span>
+        </div>
+      )}
+
+      {/* Three-dot menu */}
+      <div className="absolute right-3 top-3 z-20" ref={menuRef}>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setMenuOpen((p) => !p) }}
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background/90 text-foreground shadow-sm transition hover:bg-muted"
+        >
+          <MoreVertical size={15} />
+        </button>
+
+        {menuOpen && (
+          <div className="absolute right-0 mt-1 w-52 animate-in fade-in slide-in-from-top-1 rounded-xl border border-border bg-card p-1 shadow-xl duration-150 z-50">
+            <button
+              type="button"
+              onClick={handleToggleDestacada}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-amber-400 transition hover:bg-muted"
+            >
+              <Star size={14} fill={isDestacada ? "currentColor" : "none"} />
+              {isDestacada ? "Quitar Destacado" : "Destacar Ruta"}
+            </button>
+            <button
+              type="button"
+              onClick={handleEdit}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-foreground transition hover:bg-muted"
+            >
+              <Edit2 size={14} /> Editar ruta
+            </button>
+            <button
+              type="button"
+              onClick={handleToggleActiva}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-foreground transition hover:bg-muted"
+            >
+              {isActiva ? <><EyeOff size={14} /> Ocultar al público</> : <><Eye size={14} /> Mostrar al público</>}
+            </button>
+            <hr className="my-1 border-border" />
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-red-400 transition hover:bg-red-500/10"
+            >
+              <Trash2 size={14} /> Eliminar
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Card content */}
+      <div className="pr-10" style={{ paddingLeft: isDestacada ? "2rem" : undefined }}>
+        <h4 className="font-semibold text-foreground">{route.nombre_ruta}</h4>
+        <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
+          <span className="rounded-full bg-forest/10 px-2 py-0.5 text-forest">{route.nivel_dificultad}</span>
+          <span>{route.distancia_total} km</span>
+          <span>{route.tiempo_estimado}</span>
+        </div>
+      </div>
+    </article>
   )
 }
 

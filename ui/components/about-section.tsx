@@ -9,7 +9,7 @@ const features = [
   {
     icon: MapPin,
     title: "Origen Único",
-    description: "Nuestro cacao proviene de las fértiles tierras de la Sierra Nevada de Santa Marta, con su clima tropical húmedo ideal para el cultivo de cacao de excelencia.",
+    description: "Nuestro cacao proviene de las fértiles y mágicas tierras de la región Chimila, en el departamento del Cesar, con un clima cálido ideal para un cultivo de excelencia.",
   },
   {
     icon: Users,
@@ -19,7 +19,7 @@ const features = [
   {
     icon: TreePine,
     title: "Sostenibilidad",
-    description: "Practicamos la agricultura regenerativa, protegiendo la biodiversidad y los ecosistemas de la selva amazónica.",
+    description: "Practicamos la agricultura regenerativa, protegiendo la rica biodiversidad y los valiosos ecosistemas de la región del Cesar.",
   },
   {
     icon: Sparkles,
@@ -124,7 +124,7 @@ export function AboutSection() {
                 </div>
               </div>
               <p className="text-sm text-cream/50">
-                Comprometidos con la conservación del ecosistema amazónico.
+                Comprometidos con la conservación de la biodiversidad del Cesar.
               </p>
             </div>
           </div>
@@ -138,7 +138,7 @@ export function AboutSection() {
           >
             <div className="space-y-6">
               <p className="text-base leading-relaxed text-cream/80 sm:text-lg">
-                La Sierra Nevada de Santa Marta, una majestuosa cordillera costera en el norte de Colombia, es el hogar ancestral de nuestro cacao. Esta región única, con sus altitudes que van desde el nivel del mar hasta picos de más de 5.700 metros, crea microclimas perfectos para el cultivo de cacao fino de aroma. Sus suelos volcánicos fértiles y la humedad constante de la selva tropical producen granos excepcionales, ricos en sabor y aroma.
+                La ancestral región de los Chimilas, enclavada en el corazón del departamento del Cesar, es el hogar sagrado de nuestro cacao. Esta tierra privilegiada, bañada por ríos y bendecida con el sol ardiente del Caribe colombiano, crea el entorno perfecto para el cultivo de cacao fino de aroma. La riqueza mineral de sus valles y el amor de su gente producen granos robustos y excepcionales, impregnados de notas de sabor profundas y un aroma absolutamente inconfundible.
               </p>
               <p className="text-base leading-relaxed text-cream/80 sm:text-lg">
                 Hoy, su legado continúa. Trabajamos mano a mano con comunidades indígenas 
@@ -180,7 +180,7 @@ export function AboutSection() {
               <h3 className="text-lg font-semibold text-cream mb-2">
                 {feature.title}
               </h3>
-              <p className="text-cream/60 text-sm leading-relaxed">
+              <p className="text-cream/70 text-base leading-relaxed">
                 {feature.description}
               </p>
             </div>

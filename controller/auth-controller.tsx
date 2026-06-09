@@ -133,7 +133,7 @@ async function mapSupabaseUser(user: SupabaseUser): Promise<User> {
   const fallbackName = email.includes("@") ? email.split("@")[0] : "Usuario"
   const metadataName = user.user_metadata?.name ?? user.user_metadata?.full_name
   const fallbackFromMetadata = typeof metadataName === "string" && metadataName.trim().length > 0 ? metadataName : fallbackName
-  const profile = await getUsuarioProfile(user)
+  const profile = await getUsuarioProfile(user.id)
   const roleFromProfile = normalizeRole(profile?.rol)
 
   return {
