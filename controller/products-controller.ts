@@ -1,6 +1,6 @@
 ﻿"use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 
 import type { ProductItem } from "@/model/products"
 import { supabase } from "@/services/client"
@@ -50,18 +50,17 @@ export async function fetchProducts(): Promise<ProductItem[]> {
   const [catalogRes, linksRes] = await Promise.all([
     productIds.length > 0
       ? supabase
-          .from(DICTIONARY_TABLES.catalogoEmpresa[0])
-          .select("id_catalogo, id_producto, precio_unitario")
-          .in("id_producto", productIds)
+        .from(DICTIONARY_TABLES.catalogoEmpresa[0])
+        .select("id_catalogo, id_producto, precio_unitario")
+        .in("id_producto", productIds)
       : Promise.resolve({ data: [], error: null }),
     productIds.length > 0
       ? supabase
-          .from(DICTIONARY_TABLES.vinculoGaleria[0])
-          .select("*")
-          .eq("entidad_tipo", "PRODUCTO")
+        .from(DICTIONARY_TABLES.vinculoGaleria[0])
+        .select("*")
+        .eq("entidad_tipo", "PRODUCTO")
       : Promise.resolve({ data: [], error: null }),
   ])
-
 
   const priceByProductId = new Map<string, number>()
   console.log("Catalog data:", catalogRes.data);
@@ -124,25 +123,47 @@ export async function fetchProducts(): Promise<ProductItem[]> {
       fecha_creacion: row.fecha_creacion ? String(row.fecha_creacion) : undefined,
       id_galeria_foto: photoId ?? null,
       precio: priceByProductId.get(productId) ?? null,
+      estrella: !!row.estrella,
+      activo: row.activo !== false,
     }
   })
 }
 
+// 📦 HOOK REESCRITO PARA SER REAL-TIME Y REAVIVAR LA INTERFAZ
 export function useProducts() {
   const [products, setProducts] = useState<ProductItem[]>([])
+  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const loadProducts = async () => {
-      try {
-        const items = await fetchProducts()
-        setProducts(items)
-      } catch {
-        setProducts([])
-      }
+  // Función envuelta en useCallback para refrescar la data de Supabase a demanda
+  const handleRefresh = useCallback(async () => {
+    try {
+      const items = await fetchProducts()
+      setProducts(items)
+    } catch (error) {
+      console.error("Error cargando productos:", error)
+      setProducts([])
+    } finally {
+      setLoading(false)
     }
-
-    void loadProducts()
   }, [])
 
-  return { products }
+  // 1. Carga inicial de datos al montar la vista
+  useEffect(() => {
+    handleRefresh()
+  }, [handleRefresh])
+
+  // 2. ⚡ ESCUCHADORES DE EVENTOS GLOBALES PARA ACTUALIZACIÓN INMEDIATA
+  useEffect(() => {
+    // Al escuchar estos eventos, la lista se actualiza automáticamente en segundo plano
+    window.addEventListener("product-saved", handleRefresh)
+    window.addEventListener("product-mutated", handleRefresh)
+
+    return () => {
+      window.removeEventListener("product-saved", handleRefresh)
+      window.removeEventListener("product-mutated", handleRefresh)
+    };
+  }, [handleRefresh])
+
+  // Retornamos también handleRefresh y loading por si los necesitas en la UI
+  return { products, loading, handleRefresh }
 }

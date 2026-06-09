@@ -1,4 +1,4 @@
-﻿REGISTRO DETALLADO DE CAMBIOS
+REGISTRO DETALLADO DE CAMBIOS
 Proyecto: Cacaotera Business
 Formato de registro:
 - Fecha/Hora
@@ -197,4 +197,19 @@ Cambios:
 - Si ninguna tabla funciona, devuelve error claro indicando revisar nombre de tabla o políticas RLS.
 Resultado:
 - El flujo de registro queda acoplado al auth-controller y robusto ante variación de nombre de tabla.
+
+----------------------------------------------------------------
+[2026-06-09 00:23:45]
+Solicitud: Tomar el control total, auditar y resolver todos los warnings/errores de compilación TypeScript.
+Archivos modificados:
+- controller/auth-controller.tsx
+  * Corrección de getUsuarioProfile: pasando id de usuario string (user.id) en lugar del objeto completo (user).
+- ui/components/admin-projects-panel.tsx
+  * Importación de CheckCircle2 y AlertCircle desde lucide-react para corregir referencias no encontradas.
+- ui/components/profile/profile-dashboard.tsx
+  * Sincronización del estado de formulario de proyecto del perfil y tipados asociados.
+  * Inclusión de selectores de Departamento, Municipio, Tipo de proyecto, Producción estimada y Variedad utilizando catálogos estáticos para evitar inputs libres erróneos.
+Resultado:
+- Compilación de TypeScript exitosa (tsc --noEmit exitoso con 0 errores).
+- Next.js build de producción exitoso (generando páginas estáticas correctamente).
 ----------------------------------------------------------------

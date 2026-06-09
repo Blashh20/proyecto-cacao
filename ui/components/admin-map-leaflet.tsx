@@ -3,11 +3,39 @@
 import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet"
 import L from "leaflet"
 
+
 import type { Project } from "@/model/projects"
 
 const MAP_CENTER: [number, number] = [10.75, -73.75]
 const MAP_ZOOM = 9
 
+// components/tourism-map.tsx
+import { AdminMapLeaflet as MapBase } from "./admin-map-leaflet";
+
+export function TourismMap({ points, activePointId, onPointSelect, onMapClick }: any) {
+
+  // Transformamos tus puntos de turismo al tipo 'Project' que espera el mapa
+  const projectsAsProjects: Project[] = points.map((p: any) => ({
+    id: Number(p.id_punto),
+    name: p.nombre_lugar,
+    coordinates: {
+      lat: Number(p.latitud),
+      lng: Number(p.longitud)
+    },
+    // Asegúrate de incluir cualquier otro campo requerido por tu interfaz Project
+    // Si la interfaz exige otros campos (como 'description' o 'status'), agrégalos aquí.
+  } as Project)); // Forzamos el tipo para asegurar compatibilidad
+
+  return (
+    <MapBase // Usamos el alias importado
+      projects={projectsAsProjects}
+      selectedProjectId={activePointId}
+      onProjectSelect={(project: Project) => onPointSelect(project.id)}
+      onMapClick={onMapClick}
+      newPointCoordinates={null}
+    />
+  );
+}
 function createCustomIcon(isSelected: boolean) {
   return L.divIcon({
     className: "custom-marker",
@@ -56,6 +84,8 @@ function MapClickHandler({ onClick }: { onClick: (lat: number, lng: number) => v
   return null
 }
 
+
+
 export function AdminMapLeaflet({
   projects,
   selectedProjectId,
@@ -81,7 +111,7 @@ export function AdminMapLeaflet({
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      
+
       <MapClickHandler onClick={onMapClick} />
 
       {projects.map((project) => (

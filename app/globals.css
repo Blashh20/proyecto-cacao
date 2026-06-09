@@ -5,7 +5,7 @@
 
 :root {
   /* Chocolate & Forest Theme — Warm Medium Brown */
-  --background: oklch(0.28 0.035 55);
+  --background: #824C1B;
   --foreground: oklch(0.95 0.01 80);
   --card: oklch(0.34 0.04 55);
   --card-foreground: oklch(0.95 0.01 80);
@@ -51,7 +51,7 @@
 }
 
 .dark {
-  --background: oklch(0.28 0.035 55);
+  --background: #824C1B;
   --foreground: oklch(0.95 0.01 80);
   --card: oklch(0.34 0.04 55);
   --card-foreground: oklch(0.95 0.01 80);

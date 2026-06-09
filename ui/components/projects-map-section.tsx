@@ -106,8 +106,8 @@ export function ProjectsMapSection() {
                     </div>
                     <div>
                       <h4 className="font-semibold text-foreground">{project.name}</h4>
-                      <p className="text-sm text-muted-foreground">{project.location}</p>
-                      <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+                      <p className="text-base text-muted-foreground">{project.location}</p>
+                      <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Leaf size={12} className="text-forest" />
                           {project.hectares} ha
@@ -213,8 +213,8 @@ export function ProjectsMapSection() {
 
                 {getProjectGallery(selectedProject).length > 0 ? (
                   <div className="mb-6 rounded-2xl border border-border bg-background p-4">
-                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Galeria de la zona</p>
-                    <p className="mt-2 text-sm text-muted-foreground">
+                    <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">Galeria de la zona</p>
+                    <p className="mt-2 text-base text-muted-foreground">
                       {getProjectGallery(selectedProject)[selectedGalleryImage].alt}
                     </p>
                     <a
@@ -232,22 +232,22 @@ export function ProjectsMapSection() {
                   <div className="rounded-xl bg-forest/5 p-4 text-center">
                     <Leaf className="mx-auto mb-2 h-6 w-6 text-forest" />
                     <p className="text-2xl font-bold text-foreground">{selectedProject.hectares}</p>
-                    <p className="text-xs text-muted-foreground">Hectareas</p>
+                    <p className="text-sm text-muted-foreground">Hectareas</p>
                   </div>
                   <div className="rounded-xl bg-forest/5 p-4 text-center">
                     <Users className="mx-auto mb-2 h-6 w-6 text-forest" />
                     <p className="text-2xl font-bold text-foreground">{selectedProject.families}</p>
-                    <p className="text-xs text-muted-foreground">Familias</p>
+                    <p className="text-sm text-muted-foreground">Familias</p>
                   </div>
                   <div className="rounded-xl bg-forest/5 p-4 text-center">
                     <Calendar className="mx-auto mb-2 h-6 w-6 text-forest" />
                     <p className="text-2xl font-bold text-foreground">{selectedProject.yearStarted}</p>
-                    <p className="text-xs text-muted-foreground">Ano inicio</p>
+                    <p className="text-sm text-muted-foreground">Ano inicio</p>
                   </div>
                   <div className="rounded-xl bg-forest/5 p-4 text-center">
                     <TrendingUp className="mx-auto mb-2 h-6 w-6 text-forest" />
                     <p className="text-lg font-bold text-foreground">{selectedProject.production}</p>
-                    <p className="text-xs text-muted-foreground">Produccion</p>
+                    <p className="text-sm text-muted-foreground">Produccion</p>
                   </div>
                 </div>
 
