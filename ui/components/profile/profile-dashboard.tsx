@@ -35,7 +35,9 @@ export function ProfileHero({
 }) {
   return (
     <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-      <div className="h-52 bg-gradient-to-r from-[#1f3c2f] via-[#2f5f47] to-[#4a8768] md:h-64" />
+      <div className="relative h-52 bg-[linear-gradient(135deg,#14231d_0%,#315f4a_52%,#d7a84d_100%)] md:h-64">
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-card/70 to-transparent" />
+      </div>
       <div className="px-5 pb-4 md:px-8">
         <div className="-mt-14 flex flex-col gap-4 md:-mt-16 md:flex-row md:items-end md:justify-between">
           <div className="flex items-end gap-4">
@@ -49,6 +51,10 @@ export function ProfileHero({
             <div className="pb-2">
               <h1 className="text-2xl font-bold text-foreground md:text-3xl">{fullName}</h1>
               <p className="text-sm text-muted-foreground">{email}</p>
+              <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-background px-3 py-1 text-xs font-semibold text-muted-foreground">
+                <BadgeCheck size={14} />
+                Perfil comercial cacaotero
+              </p>
             </div>
           </div>
           <div className="pb-2">
@@ -103,16 +109,19 @@ export function SummaryTab({
     <section className="mt-4 grid gap-4 lg:grid-cols-[320px_1fr]">
       <aside className="space-y-4">
         <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-          <h3 className="text-sm font-bold text-foreground">Tu progreso de perfil</h3>
+          <h3 className="text-sm font-bold text-foreground">Madurez del perfil</h3>
           <p className="mt-2 text-3xl font-bold text-foreground">{profileCompletion}%</p>
           <div className="mt-3 h-2 rounded-full bg-background">
             <div className="h-2 rounded-full bg-forest" style={{ width: `${profileCompletion}%` }} />
           </div>
+          <p className="mt-3 text-xs text-muted-foreground">Completa identidad, contacto y fotografia para fortalecer la trazabilidad comercial.</p>
         </article>
         <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-          <h3 className="text-sm font-bold text-foreground">Contacto</h3>
-          <p className="mt-2 text-sm text-muted-foreground">{phone}</p>
-          <p className="mt-1 text-sm text-muted-foreground">{email}</p>
+          <h3 className="text-sm font-bold text-foreground">Contacto verificado</h3>
+          <div className="mt-3 space-y-2 text-sm text-muted-foreground">
+            <p className="flex items-center gap-2"><UserRound size={15} />{phone}</p>
+            <p className="flex items-center gap-2"><FileText size={15} />{email}</p>
+          </div>
         </article>
       </aside>
 
@@ -124,7 +133,7 @@ export function SummaryTab({
           <MetricCard title="Pedidos pendientes" value={String(pendientes)} icon={<Shield size={18} />} />
         </div>
         <article className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-          <h3 className="text-sm font-bold text-foreground">Actividad reciente</h3>
+          <h3 className="text-sm font-bold text-foreground">Actividad comercial reciente</h3>
           <div className="mt-3 space-y-3">
             {purchases.slice(0, 3).map((purchase) => (
               <div key={purchase.id} className="rounded-xl bg-background p-3">
@@ -180,9 +189,11 @@ export function ProjectSubmissionTab({
 }: {
   form: {
     name: string
-    location: string
+    department: string
+    municipality: string
     lat: string
     lng: string
+    localType: string
     description: string
     hectares: string
     families: string
@@ -193,9 +204,11 @@ export function ProjectSubmissionTab({
   }
   setForm: (next: (prev: {
     name: string
-    location: string
+    department: string
+    municipality: string
     lat: string
     lng: string
+    localType: string
     description: string
     hectares: string
     families: string
@@ -205,9 +218,11 @@ export function ProjectSubmissionTab({
     image: string
   }) => {
     name: string
-    location: string
+    department: string
+    municipality: string
     lat: string
     lng: string
+    localType: string
     description: string
     hectares: string
     families: string
@@ -219,6 +234,8 @@ export function ProjectSubmissionTab({
   projects: Project[]
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
 }) {
+  const municipalities = useMemo(() => getMunicipalitiesByDepartment(form.department), [form.department])
+
   const handleImage = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -238,34 +255,53 @@ export function ProjectSubmissionTab({
             <Upload size={20} />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-foreground">Subir proyecto</h3>
-            <p className="text-sm text-muted-foreground">Envia la informacion para revision del administrador.</p>
+            <h3 className="text-lg font-semibold text-foreground">Registro tecnico del proyecto</h3>
+            <p className="text-sm text-muted-foreground">Envia informacion normalizada para revision del administrador.</p>
           </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
           <Input label="Nombre del proyecto" value={form.name} onChange={(value) => setForm((s) => ({ ...s, name: value }))} />
-          
-          <label className="block">
-            <span className="mb-2 block text-sm font-medium text-foreground">Ubicacion</span>
-            <select
-              name="location"
-              id="location"
-              value={form.location}
-              onChange={(event) => setForm((s) => ({ ...s, location: event.target.value }))}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
-            >
-              <option value="">Selecciona una ubicacion</option>
-              
-            </select>
-          </label>
+          <Select
+            label="Tipo de operacion"
+            value={form.localType}
+            onChange={(value) => setForm((s) => ({ ...s, localType: value }))}
+            options={PROJECT_TYPES.map((item) => ({ value: item, label: item }))}
+          />
+          <Select
+            label="Departamento"
+            value={form.department}
+            onChange={(value) => setForm((s) => ({ ...s, department: value, municipality: "" }))}
+            options={LOCATION_CATALOG.map((item) => ({ value: item.department, label: item.department }))}
+            placeholder="Selecciona departamento"
+          />
+          <Select
+            label="Municipio"
+            value={form.municipality}
+            onChange={(value) => setForm((s) => ({ ...s, municipality: value }))}
+            options={municipalities.map((item) => ({ value: item, label: item }))}
+            placeholder={form.department ? "Selecciona municipio" : "Primero elige departamento"}
+            disabled={!form.department}
+          />
           <Input label="Latitud" type="number" value={form.lat} onChange={(value) => setForm((s) => ({ ...s, lat: value }))} />
           <Input label="Longitud" type="number" value={form.lng} onChange={(value) => setForm((s) => ({ ...s, lng: value }))} />
           <Input label="Hectareas" type="number" value={form.hectares} onChange={(value) => setForm((s) => ({ ...s, hectares: value }))} />
           <Input label="Familias beneficiadas" type="number" value={form.families} onChange={(value) => setForm((s) => ({ ...s, families: value }))} />
           <Input label="Ano de inicio" type="number" value={form.yearStarted} onChange={(value) => setForm((s) => ({ ...s, yearStarted: value }))} />
-          <Input label="Produccion estimada" value={form.production} onChange={(value) => setForm((s) => ({ ...s, production: value }))} placeholder="45 toneladas/ano" />
-          <Input label="Variedad principal" value={form.variety} onChange={(value) => setForm((s) => ({ ...s, variety: value }))} />
+          <Select
+            label="Produccion estimada"
+            value={form.production}
+            onChange={(value) => setForm((s) => ({ ...s, production: value }))}
+            options={PRODUCTION_RANGES.map((item) => ({ value: item, label: item }))}
+            placeholder="Selecciona rango"
+          />
+          <Select
+            label="Variedad principal"
+            value={form.variety}
+            onChange={(value) => setForm((s) => ({ ...s, variety: value }))}
+            options={CACAO_VARIETIES.map((item) => ({ value: item, label: item }))}
+            placeholder="Selecciona variedad"
+          />
           <label className="block">
             <span className="mb-2 block text-sm font-medium text-foreground">Imagen del proyecto</span>
             <input
@@ -294,7 +330,10 @@ export function ProjectSubmissionTab({
       </form>
 
       <aside className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-        <h3 className="text-sm font-bold text-foreground">Mis solicitudes</h3>
+        <div className="flex items-center gap-2">
+          <MapPin size={17} className="text-forest" />
+          <h3 className="text-sm font-bold text-foreground">Mis solicitudes</h3>
+        </div>
         <div className="mt-3 space-y-3">
           {projects.length === 0 ? <p className="text-sm text-muted-foreground">Todavia no has enviado proyectos.</p> : null}
           {projects.slice().reverse().map((project) => (
@@ -352,20 +391,46 @@ export function ProfileFormTab({
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
 }) {
   return (
-    <section className="mt-4 rounded-2xl border border-border bg-card p-4 shadow-sm">
-      <form onSubmit={onSubmit} className="grid gap-4 md:grid-cols-2">
-        <Input label="Primer nombre" value={form.primer_nombre} onChange={(value) => setForm((s) => ({ ...s, primer_nombre: value }))} />
-        <Input label="Segundo nombre" value={form.segundo_nombre} onChange={(value) => setForm((s) => ({ ...s, segundo_nombre: value }))} />
-        <Input label="Primer apellido" value={form.primer_apellido} onChange={(value) => setForm((s) => ({ ...s, primer_apellido: value }))} />
-        <Input label="Segundo apellido" value={form.segundo_apellido} onChange={(value) => setForm((s) => ({ ...s, segundo_apellido: value }))} />
-        <Input label="Tipo de identificacion" value={form.tipo_identificacion} onChange={(value) => setForm((s) => ({ ...s, tipo_identificacion: value }))} />
-        <Input label="ID usuario / documento" value={form.numero_identificacion} onChange={(value) => setForm((s) => ({ ...s, numero_identificacion: value }))} />
-        <Input label="Telefono" value={form.telefono_celular} onChange={(value) => setForm((s) => ({ ...s, telefono_celular: value }))} />
-        <Input label="Foto de perfil (URL)" value={form.foto_perfil_url} onChange={(value) => setForm((s) => ({ ...s, foto_perfil_url: value }))} />
-        <div className="md:col-span-2">
-          <button type="submit" className="rounded-xl bg-forest px-6 py-3 font-semibold text-white hover:bg-forest-dark">
-            Guardar perfil
-          </button>
+    <section className="mt-4 grid gap-4 lg:grid-cols-[280px_1fr]">
+      <aside className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-forest/10 text-forest">
+          <UserRound size={22} />
+        </div>
+        <h3 className="mt-4 text-lg font-semibold text-foreground">Datos maestros</h3>
+        <p className="mt-2 text-sm text-muted-foreground">Estos campos identifican al usuario dentro del flujo comercial. Los valores sensibles se capturan con listas controladas cuando aplica.</p>
+      </aside>
+
+      <form onSubmit={onSubmit} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <div className="mb-5 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-background text-forest">
+            <FileText size={19} />
+          </div>
+          <div>
+            <h3 className="text-base font-semibold text-foreground">Identidad y contacto</h3>
+            <p className="text-sm text-muted-foreground">Mantiene trazabilidad para compras, pagos y solicitudes de proyecto.</p>
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Input label="Primer nombre" value={form.primer_nombre} onChange={(value) => setForm((s) => ({ ...s, primer_nombre: value }))} />
+          <Input label="Segundo nombre" value={form.segundo_nombre} onChange={(value) => setForm((s) => ({ ...s, segundo_nombre: value }))} />
+          <Input label="Primer apellido" value={form.primer_apellido} onChange={(value) => setForm((s) => ({ ...s, primer_apellido: value }))} />
+          <Input label="Segundo apellido" value={form.segundo_apellido} onChange={(value) => setForm((s) => ({ ...s, segundo_apellido: value }))} />
+          <Select
+            label="Tipo de identificacion"
+            value={form.tipo_identificacion}
+            onChange={(value) => setForm((s) => ({ ...s, tipo_identificacion: value }))}
+            options={IDENTIFICATION_TYPES.map((item) => ({ value: item.value, label: item.label }))}
+            placeholder="Selecciona tipo"
+          />
+          <Input label="Numero de documento" value={form.numero_identificacion} onChange={(value) => setForm((s) => ({ ...s, numero_identificacion: value }))} />
+          <Input label="Telefono celular" value={form.telefono_celular} onChange={(value) => setForm((s) => ({ ...s, telefono_celular: value.replace(/[^\d+\s-]/g, "") }))} />
+          <Input label="Foto de perfil (URL)" value={form.foto_perfil_url} onChange={(value) => setForm((s) => ({ ...s, foto_perfil_url: value }))} />
+          <div className="md:col-span-2">
+            <button type="submit" className="inline-flex items-center gap-2 rounded-xl bg-forest px-6 py-3 font-semibold text-white hover:bg-forest-dark">
+              <Shield size={16} />
+              Guardar perfil
+            </button>
+          </div>
         </div>
       </form>
     </section>
@@ -445,8 +510,8 @@ export function PaymentsTab({
             onChange={(event) => setDraft((prev) => ({ ...prev, tipo: event.target.value as PaymentMethodItem["tipo"] }))}
             className="rounded-lg border border-border bg-card px-3 py-2 text-sm"
           >
-            <option value="credito">Tarjeta credito</option>
-            <option value="debito">Tarjeta debito</option>
+            <option value="credito">Tarjeta de credito</option>
+            <option value="debito">Tarjeta de debito</option>
             <option value="nequi">Nequi</option>
             <option value="daviplata">Daviplata</option>
             <option value="transferencia">Transferencia</option>
@@ -502,7 +567,20 @@ export function PaymentsTab({
       </div>
 
       <form onSubmit={onSubmit} className="grid gap-4 md:grid-cols-2">
-        <Input label="Metodo de pago preferido" value={form.metodo_preferido} onChange={(value) => setForm((s) => ({ ...s, metodo_preferido: value }))} placeholder="Tarjeta / Transferencia / Nequi" />
+        <Select
+          label="Metodo de pago preferido"
+          value={form.metodo_preferido}
+          onChange={(value) => setForm((s) => ({ ...s, metodo_preferido: value }))}
+          options={[
+            { value: "Tarjeta de credito", label: "Tarjeta de credito" },
+            { value: "Tarjeta de debito", label: "Tarjeta de debito" },
+            { value: "Transferencia bancaria", label: "Transferencia bancaria" },
+            { value: "Nequi", label: "Nequi" },
+            { value: "Daviplata", label: "Daviplata" },
+            { value: "Efectivo contra entrega", label: "Efectivo contra entrega" },
+          ]}
+          placeholder="Selecciona metodo"
+        />
         <Input label="Titular de facturacion" value={form.titular_facturacion} onChange={(value) => setForm((s) => ({ ...s, titular_facturacion: value }))} />
         <Input label="Documento de facturacion" value={form.documento_facturacion} onChange={(value) => setForm((s) => ({ ...s, documento_facturacion: value }))} />
         <div className="md:col-span-2">
@@ -562,6 +640,41 @@ function StatusBadge({ status }: { status: string }) {
         : "bg-amber-500/10 text-amber-300"
 
   return <span className={`rounded-full px-3 py-1 text-xs font-semibold ${className}`}>{status}</span>
+}
+
+function Select({
+  label,
+  value,
+  onChange,
+  options,
+  placeholder = "Selecciona una opcion",
+  disabled = false,
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  options: { value: string; label: string }[]
+  placeholder?: string
+  disabled?: boolean
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-medium text-foreground">{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        disabled={disabled}
+        className="w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground outline-none transition focus:border-forest focus:ring-2 focus:ring-forest/20 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <option value="">{placeholder}</option>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
 }
 
 function Input({

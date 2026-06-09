@@ -4,7 +4,9 @@ import { useMemo, useState, type ChangeEvent, type FormEvent, type ReactNode } f
 import { parseProduction, calculateYield } from "@/controller/admin-projects-panel-controller"
 import dynamic from "next/dynamic"
 import {
+  AlertCircle,
   BarChart3,
+  CheckCircle2,
   Factory,
   Globe2,
   Leaf,

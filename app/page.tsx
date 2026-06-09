@@ -10,8 +10,6 @@ import { ProductsSection } from "@/ui/components/products-section"
 import { GallerySection } from "@/ui/components/gallery-section"
 import { ContactSection } from "@/ui/components/contact-section"
 import { Footer } from "@/ui/components/footer"
-import { AdminProjectsPanel } from "@/ui/components/admin-projects-panel"
-import { AdminProductsPanel } from "@/ui/components/admin-products-panel"
 
 export default function Home() {
   return (
@@ -22,8 +20,6 @@ export default function Home() {
       <ProcessSection />
       <ProjectsMapSection />
       <TourismSection />
-      <AdminProjectsPanel />
-      <AdminProductsPanel />
       <ProductsSection />
       <GallerySection />
       <ContactSection />

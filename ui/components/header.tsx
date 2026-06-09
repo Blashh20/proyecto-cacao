@@ -11,12 +11,12 @@ import { RegisterModal } from "@/ui/components/auth/register-modal"
 import { cn } from "@/ui/utils"
 
 const navItems = [
-  { href: "#inicio", label: "Inicio" },
-  { href: "#nosotros", label: "Nosotros" },
-  { href: "#proceso", label: "Proceso" },
-  { href: "#proyectos", label: "Proyectos" },
-  { href: "#productos", label: "Productos" },
-  { href: "#contacto", label: "Contacto" },
+  { href: "/#inicio", label: "Inicio" },
+  { href: "/#nosotros", label: "Nosotros" },
+  { href: "/#proceso", label: "Proceso" },
+  { href: "/#proyectos", label: "Proyectos" },
+  { href: "/#productos", label: "Productos" },
+  { href: "/#contacto", label: "Contacto" },
 ]
 
 export function Header() {
@@ -54,7 +54,7 @@ export function Header() {
     setIsLoginOpen(true)
   }
 
-  const menuItems = user?.role === "admin" ? [...navItems, { href: "#admin", label: "Admin" }] : navItems
+  const menuItems = user?.role === "admin" ? [...navItems, { href: "/admin", label: "Admin" }] : navItems
 
   return (
     <>
@@ -65,7 +65,7 @@ export function Header() {
         )}
       >
         <div className="container mx-auto flex items-center justify-between px-4 sm:px-6">
-          <Link href="#inicio" className="group flex min-w-0 items-center gap-3">
+          <Link href="/#inicio" className="group flex min-w-0 items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-forest transition-transform group-hover:scale-110 sm:h-12 sm:w-12">
               <Image
                 src="/images/simbolo.png"
@@ -132,7 +132,7 @@ export function Header() {
                     </Link>
                     {user.role === "admin" && (
                       <Link
-                        href="#admin"
+                        href="/admin"
                         className="flex items-center gap-2 px-4 py-3 text-sm text-foreground transition-colors hover:bg-forest/10"
                       >
                         <Shield size={16} className="text-forest" />
@@ -273,4 +273,3 @@ export function Header() {
     </>
   )
 }
-

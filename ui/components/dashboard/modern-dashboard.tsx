@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   Bell,
   CreditCard,
@@ -13,39 +13,8 @@ import {
   Users,
   X,
 } from "lucide-react"
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts"
-
-const salesByMonth = [
-  { month: "Ene", ventas: 12000, usuarios: 320 },
-  { month: "Feb", ventas: 14500, usuarios: 410 },
-  { month: "Mar", ventas: 13800, usuarios: 390 },
-  { month: "Abr", ventas: 17000, usuarios: 460 },
-  { month: "May", ventas: 19500, usuarios: 540 },
-  { month: "Jun", ventas: 21000, usuarios: 600 },
-]
-
-const revenueByChannel = [
-  { canal: "Web", valor: 44000 },
-  { canal: "Marketplace", valor: 28000 },
-  { canal: "Retail", valor: 19000 },
-]
-
-const recentOrders = [
-  { id: "ORD-1982", cliente: "Comercial Andes", fecha: "2026-05-01", estado: "Pagado", total: 1850000 },
-  { id: "ORD-1974", cliente: "Cacao Norte", fecha: "2026-04-30", estado: "En proceso", total: 940000 },
-  { id: "ORD-1969", cliente: "Distribuidora Sol", fecha: "2026-04-29", estado: "Pagado", total: 1260000 },
-  { id: "ORD-1962", cliente: "Mercado Verde", fecha: "2026-04-28", estado: "Pendiente", total: 680000 },
-]
+import { PowerBIReport } from "@/ui/components/dashboard/power-bi-report"
+import { fetchDashboardData, type DashboardData } from "@/services/dashboard-service"
 
 const navItems = [
   { label: "Inicio", icon: Home },
@@ -60,27 +29,54 @@ export function ModernDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [sortBy, setSortBy] = useState<"fecha" | "total">("fecha")
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState("")
+  const powerBIConfig = {
+    publicEmbedUrl: process.env.NEXT_PUBLIC_POWER_BI_PUBLIC_EMBED_URL,
+    embedUrl: process.env.NEXT_PUBLIC_POWER_BI_EMBED_URL,
+    reportId: process.env.NEXT_PUBLIC_POWER_BI_REPORT_ID,
+    accessToken: process.env.NEXT_PUBLIC_POWER_BI_ACCESS_TOKEN,
+  }
 
-  const metrics = useMemo(() => {
-    const ventas = salesByMonth.reduce((sum, item) => sum + item.ventas, 0)
-    const usuarios = salesByMonth[salesByMonth.length - 1]?.usuarios ?? 0
-    const ingresos = revenueByChannel.reduce((sum, item) => sum + item.valor, 0)
-    return { ventas, usuarios, ingresos }
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadDashboardData() {
+      try {
+        setIsLoading(true)
+        setErrorMessage("")
+        const data = await fetchDashboardData()
+        if (isMounted) setDashboardData(data)
+      } catch (error) {
+        if (isMounted) {
+          setErrorMessage(error instanceof Error ? error.message : "No se pudieron cargar los datos del dashboard.")
+        }
+      } finally {
+        if (isMounted) setIsLoading(false)
+      }
+    }
+
+    void loadDashboardData()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   const filteredAndSortedOrders = useMemo(() => {
-    const filtered = recentOrders.filter(
+    const filtered = (dashboardData?.orders ?? []).filter(
       (order) =>
         order.id.toLowerCase().includes(query.toLowerCase()) ||
         order.cliente.toLowerCase().includes(query.toLowerCase()) ||
         order.estado.toLowerCase().includes(query.toLowerCase())
     )
 
-    return filtered.sort((a, b) => {
+    return [...filtered].sort((a, b) => {
       if (sortBy === "fecha") return b.fecha.localeCompare(a.fecha)
       return b.total - a.total
     })
-  }, [query, sortBy])
+  }, [dashboardData?.orders, query, sortBy])
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -140,47 +136,35 @@ export function ModernDashboard() {
 
           <main className="px-4 py-5 md:px-6">
             <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <MetricCard title="Ventas" value={`$${metrics.ventas.toLocaleString("es-CO")}`} detail="+12.5% vs mes anterior" />
-              <MetricCard title="Usuarios" value={metrics.usuarios.toLocaleString("es-CO")} detail="+8.2% nuevos registros" />
-              <MetricCard title="Ingresos" value={`$${metrics.ingresos.toLocaleString("es-CO")}`} detail="Margen estable 24%" />
+              <MetricCard title="Ventas registradas" value={formatCount(dashboardData?.ventas, isLoading)} detail="Registros reales en tabla ventas" />
+              <MetricCard title="Usuarios" value={formatCount(dashboardData?.usuarios, isLoading)} detail="Cuentas registradas en usuarios" />
+              <MetricCard title="Ingresos" value={formatCurrency(dashboardData?.ingresos, isLoading)} detail="Suma de monto_total en ventas" />
             </section>
 
-            <section className="mt-5 grid gap-4 xl:grid-cols-2">
-              <div className="rounded-2xl border border-border bg-card p-4">
-                <h3 className="mb-4 text-sm font-semibold text-foreground">Tendencia de ventas y usuarios</h3>
-                <div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={salesByMonth}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
-                      <Line type="monotone" dataKey="ventas" stroke="#5ea57d" strokeWidth={2.5} dot={false} />
-                      <Line type="monotone" dataKey="usuarios" stroke="#b79458" strokeWidth={2} dot={false} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
+            {errorMessage ? (
+              <section className="mt-5 rounded-2xl border border-red-400/40 bg-red-500/10 p-4 text-sm text-red-200">
+                {errorMessage}
+              </section>
+            ) : null}
 
-              <div className="rounded-2xl border border-border bg-card p-4">
-                <h3 className="mb-4 text-sm font-semibold text-foreground">Ingresos por canal</h3>
-                <div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={revenueByChannel}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-                      <XAxis dataKey="canal" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="valor" fill="#5ea57d" radius={[8, 8, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
+            <section className="mt-5 grid gap-4 md:grid-cols-2">
+              <MetricCard title="Empresas" value={formatCount(dashboardData?.empresas, isLoading)} detail="Empresas disponibles para el mapa" />
+              <MetricCard title="Productos" value={formatCount(dashboardData?.productos, isLoading)} detail="Productos derivados registrados" />
+            </section>
+
+            <section className="mt-5">
+              <PowerBIReport
+                title="Analitica comercial"
+                publicEmbedUrl={powerBIConfig.publicEmbedUrl}
+                embedUrl={powerBIConfig.embedUrl}
+                reportId={powerBIConfig.reportId}
+                accessToken={powerBIConfig.accessToken}
+              />
             </section>
 
             <section className="mt-5 rounded-2xl border border-border bg-card p-4">
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <h3 className="text-sm font-semibold text-foreground">Ordenes recientes</h3>
+                <h3 className="text-sm font-semibold text-foreground">Ventas recientes</h3>
                 <div className="flex items-center gap-2">
                   <label className="text-xs text-muted-foreground">Ordenar por</label>
                   <select
@@ -210,13 +194,20 @@ export function ModernDashboard() {
                       <tr key={order.id} className="border-b border-border/40 text-sm">
                         <td className="px-3 py-3 font-medium text-foreground">{order.id}</td>
                         <td className="px-3 py-3 text-muted-foreground">{order.cliente}</td>
-                        <td className="px-3 py-3 text-muted-foreground">{order.fecha}</td>
+                        <td className="px-3 py-3 text-muted-foreground">{new Date(order.fecha).toLocaleDateString("es-CO")}</td>
                         <td className="px-3 py-3">
                           <span className="rounded-full bg-forest/15 px-2.5 py-1 text-xs font-semibold text-forest-light">{order.estado}</span>
                         </td>
                         <td className="px-3 py-3 text-right font-semibold text-foreground">${order.total.toLocaleString("es-CO")}</td>
                       </tr>
                     ))}
+                    {!isLoading && filteredAndSortedOrders.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                          No hay ventas registradas para mostrar.
+                        </td>
+                      </tr>
+                    ) : null}
                   </tbody>
                 </table>
               </div>
@@ -228,6 +219,16 @@ export function ModernDashboard() {
       {sidebarOpen ? <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setSidebarOpen(false)} /> : null}
     </div>
   )
+}
+
+function formatCount(value: number | undefined, isLoading: boolean) {
+  if (isLoading) return "Cargando..."
+  return (value ?? 0).toLocaleString("es-CO")
+}
+
+function formatCurrency(value: number | undefined, isLoading: boolean) {
+  if (isLoading) return "Cargando..."
+  return `$${(value ?? 0).toLocaleString("es-CO")} COP`
 }
 
 function MetricCard({ title, value, detail }: { title: string; value: string; detail: string }) {
