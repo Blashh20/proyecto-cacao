@@ -1,15 +1,18 @@
-"use client"
+"use client";
 
-import { useEffect, useRef, useState } from "react"
-import dynamic from "next/dynamic"
-import { CheckCircle, Clock, Mail, MapPin, Phone, Send } from "lucide-react"
+import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import { CheckCircle, Clock, Mail, MapPin, Phone, Send } from "lucide-react";
 
-import { cn } from "@/ui/utils"
+import { cn } from "@/ui/utils";
 
 const ContactMapLeaflet = dynamic(
-  () => import("@/ui/components/contact-map-leaflet").then((mod) => mod.ContactMapLeaflet),
-  { ssr: false }
-)
+  () =>
+    import("@/ui/components/contact-map-leaflet").then(
+      (mod) => mod.ContactMapLeaflet,
+    ),
+  { ssr: false },
+);
 
 const contactInfo = [
   {
@@ -32,65 +35,73 @@ const contactInfo = [
     title: "Horario",
     details: ["Lunes - Viernes: 8am - 6pm", "Sabado: 9am - 2pm"],
   },
-]
+];
 
 export function ContactSection() {
-  const sectionRef = useRef<HTMLElement>(null)
-  const [isVisible, setIsVisible] = useState(false)
+  const sectionRef = useRef<HTMLElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
   const [formState, setFormState] = useState({
     name: "",
     email: "",
     phone: "",
     message: "",
-  })
-  const [isSubmitted, setIsSubmitted] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  });
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setIsVisible(true)
+          setIsVisible(true);
         }
       },
-      { threshold: 0.1 }
-    )
+      { threshold: 0.1 },
+    );
 
     if (sectionRef.current) {
-      observer.observe(sectionRef.current)
+      observer.observe(sectionRef.current);
     }
 
-    return () => observer.disconnect()
-  }, [])
+    return () => observer.disconnect();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
+    e.preventDefault();
+    setIsSubmitting(true);
 
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    setIsSubmitting(false)
-    setIsSubmitted(true)
-    setFormState({ name: "", email: "", phone: "", message: "" })
+    setIsSubmitting(false);
+    setIsSubmitted(true);
+    setFormState({ name: "", email: "", phone: "", message: "" });
 
-    setTimeout(() => setIsSubmitted(false), 5000)
-  }
+    setTimeout(() => setIsSubmitted(false), 5000);
+  };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    const { name, value } = e.target;
 
     setFormState((prev) => {
       if (name === "phone") {
-        const onlyNumbers = value.replace(/[^0-9+]/g, "").replace(/(?!^)\+/g, "")
-        return { ...prev, [name]: onlyNumbers }
+        const onlyNumbers = value
+          .replace(/[^0-9+]/g, "")
+          .replace(/(?!^)\+/g, "");
+        return { ...prev, [name]: onlyNumbers };
       }
 
-      return { ...prev, [name]: value }
-    })
-  }
+      return { ...prev, [name]: value };
+    });
+  };
 
   return (
-    <section id="contacto" ref={sectionRef} className="relative overflow-hidden py-14 sm:py-16 lg:py-20">
+    <section
+      id="contacto"
+      ref={sectionRef}
+      className="relative overflow-hidden py-14 sm:py-16 lg:py-20"
+    >
       <div className="absolute inset-0">
         <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-forest/5 blur-3xl" />
         <div className="absolute bottom-0 left-0 h-96 w-96 rounded-full bg-chocolate/5 blur-3xl" />
@@ -100,16 +111,22 @@ export function ContactSection() {
         <div className="mb-10 text-center md:mb-12">
           <span
             className={cn(
-              "mb-4 inline-block text-sm uppercase tracking-[0.3em] text-forest-light transition-all duration-700",
-              isVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
+              // Agregado inline-flex, items-center y gap-2 para alinear el icono y el texto
+              "mb-4 inline-flex items-center gap-2 text-sm uppercase tracking-[0.3em] transition-all duration-700 bg-forest/50 px-4 py-2 rounded-full",
+              isVisible
+                ? "translate-y-0 opacity-100"
+                : "translate-y-4 opacity-0",
             )}
           >
-            Contactanos
+            <Mail size={18} />
+            <span className="font-medium">Contacto</span>
           </span>
           <h2
             className={cn(
               "mb-4 text-3xl font-serif font-bold text-cream transition-all duration-700 delay-100 sm:text-4xl lg:text-5xl",
-              isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+              isVisible
+                ? "translate-y-0 opacity-100"
+                : "translate-y-8 opacity-0",
             )}
           >
             <span className="text-balance">Conecta con</span>
@@ -119,10 +136,13 @@ export function ContactSection() {
           <p
             className={cn(
               "mx-auto max-w-2xl text-base leading-relaxed text-cream/60 transition-all duration-700 delay-200 sm:text-lg",
-              isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+              isVisible
+                ? "translate-y-0 opacity-100"
+                : "translate-y-8 opacity-0",
             )}
           >
-            Si quieres cotizar, conocer el portafolio o explorar oportunidades en cafe y cacao, estamos listos para ayudarte.
+            Si quieres cotizar, conocer el portafolio o explorar oportunidades
+            en cafe y cacao, estamos listos para ayudarte.
           </p>
         </div>
 
@@ -130,7 +150,9 @@ export function ContactSection() {
           <div
             className={cn(
               "transition-all duration-700 delay-300",
-              isVisible ? "translate-x-0 opacity-100" : "-translate-x-12 opacity-0"
+              isVisible
+                ? "translate-x-0 opacity-100"
+                : "-translate-x-12 opacity-0",
             )}
           >
             <div className="rounded-2xl border border-border bg-card p-4 sm:p-6 lg:p-8">
@@ -139,14 +161,21 @@ export function ContactSection() {
                   <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-forest/20">
                     <CheckCircle className="h-8 w-8 text-forest-light" />
                   </div>
-                  <h3 className="mb-3 text-2xl font-semibold text-cream">Mensaje enviado</h3>
-                  <p className="text-cream/60">Gracias por contactar a Makakaw. Te responderemos pronto.</p>
+                  <h3 className="mb-3 text-2xl font-semibold text-cream">
+                    Mensaje enviado
+                  </h3>
+                  <p className="text-cream/60">
+                    Gracias por contactar a Makakaw. Te responderemos pronto.
+                  </p>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid gap-6 sm:grid-cols-2">
                     <div>
-                      <label htmlFor="name" className="mb-2 block text-sm text-cream/70">
+                      <label
+                        htmlFor="name"
+                        className="mb-2 block text-sm text-cream/70"
+                      >
                         Nombre completo
                       </label>
                       <input
@@ -161,7 +190,10 @@ export function ContactSection() {
                       />
                     </div>
                     <div>
-                      <label htmlFor="phone" className="mb-2 block text-sm text-cream/70">
+                      <label
+                        htmlFor="phone"
+                        className="mb-2 block text-sm text-cream/70"
+                      >
                         Telefono
                       </label>
                       <input
@@ -179,7 +211,10 @@ export function ContactSection() {
                   </div>
 
                   <div>
-                    <label htmlFor="email" className="mb-2 block text-sm text-cream/70">
+                    <label
+                      htmlFor="email"
+                      className="mb-2 block text-sm text-cream/70"
+                    >
                       Correo electronico
                     </label>
                     <input
@@ -195,7 +230,10 @@ export function ContactSection() {
                   </div>
 
                   <div>
-                    <label htmlFor="message" className="mb-2 block text-sm text-cream/70">
+                    <label
+                      htmlFor="message"
+                      className="mb-2 block text-sm text-cream/70"
+                    >
                       Mensaje
                     </label>
                     <textarea
@@ -223,7 +261,9 @@ export function ContactSection() {
                     ) : (
                       <>
                         <Send size={18} />
-                        <span className="text-sm uppercase tracking-wider">Enviar mensaje</span>
+                        <span className="text-sm uppercase tracking-wider">
+                          Enviar mensaje
+                        </span>
                       </>
                     )}
                   </button>
@@ -235,7 +275,9 @@ export function ContactSection() {
           <div
             className={cn(
               "transition-all duration-700 delay-500",
-              isVisible ? "translate-x-0 opacity-100" : "translate-x-12 opacity-0"
+              isVisible
+                ? "translate-x-0 opacity-100"
+                : "translate-x-12 opacity-0",
             )}
           >
             <div className="space-y-6">
@@ -248,7 +290,9 @@ export function ContactSection() {
                     <item.icon className="h-5 w-5 text-forest-light" />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="mb-1 text-lg font-semibold text-cream">{item.title}</h3>
+                    <h3 className="mb-1 text-lg font-semibold text-cream">
+                      {item.title}
+                    </h3>
                     {item.details.map((detail, i) => (
                       <p key={i} className="break-words text-sm text-cream/60">
                         {detail}
@@ -266,6 +310,5 @@ export function ContactSection() {
         </div>
       </div>
     </section>
-  )
+  );
 }
-

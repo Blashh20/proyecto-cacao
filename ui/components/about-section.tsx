@@ -64,14 +64,16 @@ export function AboutSection() {
       <div className="container relative z-10 mx-auto px-4 sm:px-6">
         {/* Section Header */}
         <div className="mb-10 text-center lg:mb-12">
-          <span 
+          <div
             className={cn(
-              "inline-block text-forest-light text-sm tracking-[0.3em] uppercase mb-4 transition-all duration-700",
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+              "mb-5 inline-flex items-center gap-2 rounded-full border border-forest/50 bg-forest/50 px-3 py-2 backdrop-blur-sm transition-all duration-1000 sm:mb-6 sm:px-4"
             )}
           >
-            Nuestra Historia
-          </span>
+            <span className="h-2 w-2 rounded-full bg-forest animate-pulse" />
+            <span className="text-center text-[11px] uppercase tracking-[0.2em] sm:text-sm sm:tracking-widest">
+              Nuestra Historia
+            </span>
+          </div>
           <h2 
             className={cn(
               "mb-4 text-3xl font-serif font-bold text-cream transition-all duration-700 delay-100 sm:text-4xl lg:text-5xl",

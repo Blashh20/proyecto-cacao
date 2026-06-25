@@ -109,9 +109,9 @@ export function ProjectsMapSection() {
 
       <div className="container relative z-10 mx-auto px-4 sm:px-6">
         <div className="mb-10 text-center lg:mb-12">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-forest/10 px-4 py-2 text-forest">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-forest/50 px-4 py-2">
             <Mountain size={18} />
-            <span className="text-sm font-medium uppercase tracking-wider">
+            <span className=" font-medium uppercase tracking-wider">
               Territorios de origen
             </span>
           </div>

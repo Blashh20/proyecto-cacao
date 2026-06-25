@@ -93,7 +93,7 @@ export function TourismSection() {
       <div className="container mx-auto px-4 sm:px-6">
         {/* Header */}
         <div className="mb-10 text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-forest/10 px-4 py-2 text-forest">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-forest/50 px-4 py-2">
             <Compass size={16} />
             <span className="text-sm font-medium uppercase tracking-wider">Turismo</span>
           </div>

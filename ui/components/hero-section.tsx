@@ -74,12 +74,12 @@ export function HeroSection() {
         <div className="mx-auto max-w-6xl text-center">
           <div
             className={cn(
-              "mb-5 inline-flex items-center gap-2 rounded-full border border-forest/50 bg-forest/10 px-3 py-2 backdrop-blur-sm transition-all duration-1000 sm:mb-6 sm:px-4",
+              "mb-5 inline-flex items-center gap-2 rounded-full border border-forest/50 bg-forest/50 px-3 py-2 backdrop-blur-sm transition-all duration-1000 sm:mb-6 sm:px-4",
               isLoaded ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
             )}
           >
             <span className="h-2 w-2 rounded-full bg-forest animate-pulse" />
-            <span className="text-center text-[11px] uppercase tracking-[0.2em] text-forest-light sm:text-sm sm:tracking-widest">
+            <span className="text-center text-[11px] uppercase tracking-[0.2em] sm:text-sm sm:tracking-widest">
               Makakaw / Cafe y Cacao Colombiano
             </span>
           </div>
