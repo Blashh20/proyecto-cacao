@@ -3,14 +3,25 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
 import type { Provider, User as SupabaseUser } from "@supabase/supabase-js"
 
-import { supabase } from "@/services/client"
-import { DICTIONARY_TABLES } from "@/services/dictionary-db"
+import {
+  findUsuarioProfile,
+  getCurrentSession,
+  insertUsuarioProfile,
+  listenToAuthStateChange,
+  signInWithOAuthProvider,
+  signInWithPassword,
+  signOutCurrentUser,
+  signUpWithPassword,
+  upsertUsuarioProfile,
+  type UsuarioRow,
+} from "@/services/auth-service"
 
 interface User {
   id: string
   name: string
   email: string
   role: "admin" | "user"
+  avatarUrl: string | null
 }
 
 interface LoginInput {
@@ -44,18 +55,6 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 const ORGANIZATION_EMAIL_DOMAIN = "@unicesar.edu.co"
 const PENDING_LOGIN_ROLE_KEY = "makakaw.pendingLoginRole"
-
-interface UsuarioRow {
-  id_usuario: string
-  tipo_identificacion: string | null
-  primer_nombre: string | null
-  segundo_nombre: string | null
-  primer_apellido: string | null
-  segundo_apellido: string | null
-  email: string | null
-  telefono_celular: string | null
-  rol: string | null
-}
 
 function getAdminEmails() {
   const raw = process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? ""
@@ -125,44 +124,13 @@ function splitDisplayName(displayName: string) {
 }
 
 async function getUsuarioProfile(user: SupabaseUser) {
-  const fields =
-    "id_usuario, tipo_identificacion, primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, email, telefono_celular, rol"
-  const candidates = [
-    String(user.user_metadata?.numero_identificacion ?? ""),
-    String(user.user_metadata?.id_usuario ?? ""),
-    user.id,
-  ].filter(Boolean)
-
-  for (const table of DICTIONARY_TABLES.usuario) {
-    for (const id of candidates) {
-      const result = await supabase
-        .from(table)
-        .select(fields)
-        .eq("id_usuario", id)
-        .maybeSingle<UsuarioRow>()
-
-      if (!result.error && result.data) return result.data
-    }
-  }
-
-  if (user.email) {
-    for (const table of DICTIONARY_TABLES.usuario) {
-      const result = await supabase
-        .from(table)
-        .select(fields)
-        .eq("email", user.email.toLowerCase())
-        .maybeSingle<UsuarioRow>()
-
-      if (!result.error && result.data) return result.data
-    }
-  }
-
-  return null
+  return findUsuarioProfile(user)
 }
 
 async function ensureUsuarioProfile(user: SupabaseUser, existingProfile: UsuarioRow | null) {
   const email = user.email?.trim().toLowerCase() ?? ""
   const metadataName = user.user_metadata?.full_name ?? user.user_metadata?.name
+  const metadataAvatar = user.user_metadata?.avatar_url ?? user.user_metadata?.picture
   const displayName =
     typeof metadataName === "string" && metadataName.trim().length > 0
       ? metadataName.trim()
@@ -183,14 +151,12 @@ async function ensureUsuarioProfile(user: SupabaseUser, existingProfile: Usuario
     email: existingProfile?.email ?? email,
     telefono_celular: existingProfile?.telefono_celular ?? null,
     rol: existingProfile?.rol ?? role,
+    foto_url:
+      existingProfile?.foto_url ??
+      (typeof metadataAvatar === "string" && metadataAvatar.trim().length > 0 ? metadataAvatar.trim() : null),
   }
 
-  for (const table of DICTIONARY_TABLES.usuario) {
-    const result = await supabase.from(table).upsert(payload, { onConflict: "id_usuario" }).select("*").maybeSingle<UsuarioRow>()
-    if (!result.error && result.data) return result.data
-  }
-
-  return existingProfile
+  return (await upsertUsuarioProfile(payload)) ?? existingProfile
 }
 
 async function mapSupabaseUser(user: SupabaseUser): Promise<User> {
@@ -207,6 +173,10 @@ async function mapSupabaseUser(user: SupabaseUser): Promise<User> {
     email: profile?.email ?? email,
     name: buildNameFromUsuario(profile, fallbackFromMetadata),
     role: roleFromProfile === "admin" ? "admin" : getRoleFromSupabaseUser(user),
+    avatarUrl:
+      profile?.foto_url ??
+      (typeof user.user_metadata?.avatar_url === "string" ? user.user_metadata.avatar_url : null) ??
+      (typeof user.user_metadata?.picture === "string" ? user.user_metadata.picture : null),
   }
 }
 
@@ -235,7 +205,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (pendingRole === "admin" && mappedUser.role !== "admin") {
-        await supabase.auth.signOut()
+        await signOutCurrentUser()
         if (!isMounted) return
         setUser(null)
         setIsLoading(false)
@@ -248,7 +218,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const loadSession = async () => {
-      const { data, error } = await supabase.auth.getSession()
+      const { data, error } = await getCurrentSession()
 
       if (error) {
         if (isMounted) {
@@ -262,7 +232,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     void loadSession()
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = listenToAuthStateChange(async (_event, session) => {
       void syncSessionUser(session?.user ?? null)
     })
 
@@ -279,10 +249,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(`Para entrar como administrador debes usar una cuenta ${ORGANIZATION_EMAIL_DOMAIN}`)
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: normalizedEmail,
-      password,
-    })
+    const { data, error } = await signInWithPassword(normalizedEmail, password)
 
     if (error) {
       throw new Error("Correo o contrasena incorrectos")
@@ -297,13 +264,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const resolvedRole = mappedUser.role
 
     if (role === "admin" && resolvedRole !== "admin") {
-      await supabase.auth.signOut()
+      await signOutCurrentUser()
       throw new Error(`Tu cuenta ${ORGANIZATION_EMAIL_DOMAIN} no tiene permisos de administrador`)
     }
   }
 
   const logout = async () => {
-    const { error } = await supabase.auth.signOut()
+    const { error } = await signOutCurrentUser()
     if (error) {
       throw new Error("No se pudo cerrar sesion")
     }
@@ -314,12 +281,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.localStorage.setItem(PENDING_LOGIN_ROLE_KEY, role)
     }
 
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { error } = await signInWithOAuthProvider(
       provider,
-      options: {
-        redirectTo: typeof window !== "undefined" ? `${window.location.origin}/perfil` : undefined,
-      },
-    })
+      typeof window !== "undefined" ? `${window.location.origin}/perfil` : undefined
+    )
 
     if (error) {
       throw new Error(`No se pudo iniciar sesion con ${provider}`)
@@ -346,22 +311,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const normalizedTipo = tipo_identificacion.trim()
     const normalizedNumero = numero_identificacion.trim()
 
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await signUpWithPassword({
       email: normalizedEmail,
       password,
-      options: {
-        data: {
-          full_name: [normalizedPrimerNombre, normalizedPrimerApellido].filter(Boolean).join(" "),
-          tipo_identificacion: normalizedTipo,
-          numero_identificacion: normalizedNumero,
-          primer_nombre: normalizedPrimerNombre,
-          segundo_nombre: normalizedSegundoNombre || null,
-          primer_apellido: normalizedPrimerApellido,
-          segundo_apellido: normalizedSegundoApellido || null,
-          telefono_celular: normalizedTelefono,
-          id_usuario: normalizedNumero,
-          role: "Cliente",
-        },
+      metadata: {
+        full_name: [normalizedPrimerNombre, normalizedPrimerApellido].filter(Boolean).join(" "),
+        tipo_identificacion: normalizedTipo,
+        numero_identificacion: normalizedNumero,
+        primer_nombre: normalizedPrimerNombre,
+        segundo_nombre: normalizedSegundoNombre || null,
+        primer_apellido: normalizedPrimerApellido,
+        segundo_apellido: normalizedSegundoApellido || null,
+        telefono_celular: normalizedTelefono,
+        id_usuario: normalizedNumero,
+        role: "Cliente",
       },
     })
 
@@ -386,18 +349,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       rol: "Cliente",
     }
 
-    const profileTables = DICTIONARY_TABLES.usuario
-    let lastProfileError: string | null = null
-    let inserted = false
-
-    for (const table of profileTables) {
-      const { error: profileError } = await supabase.from(table).insert(profilePayload)
-      if (!profileError) {
-        inserted = true
-        break
-      }
-      lastProfileError = `${table}: ${profileError.message}`
-    }
+    const { inserted, lastProfileError } = await insertUsuarioProfile(profilePayload)
 
     if (!inserted) {
       throw new Error(

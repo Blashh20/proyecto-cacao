@@ -111,7 +111,8 @@ export function ProductsSection() {
         </div>
 
         {/* CONTENEDOR DE LA GRID */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
+        <div className="max-h-[78vh] overflow-y-auto overscroll-contain pr-2 sm:max-h-[860px] lg:max-h-[920px]">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
           {products && products.length > 0 ? (
             products
               // 1. Eliminamos duplicados o registros vacíos indeseados filtrando por ID único válido
@@ -137,6 +138,7 @@ export function ProductsSection() {
               No hay productos disponibles en este momento.
             </p>
           )}
+          </div>
         </div>
 
         <div
@@ -295,144 +297,156 @@ function ProductCard({
 
   return (
     <div
-      className={cn(
-        "group relative transition-all duration-500",
-        isVisible ? "translate-y-0 opacity-100" : "translate-y-12 opacity-0",
-      )}
-      style={{ transitionDelay: `${index * 50}ms` }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div
-        className={cn(
-          "overflow-hidden rounded-2xl border bg-card transition-all duration-500 hover:border-forest/50 relative h-full flex flex-col justify-between",
-          isEstrella ? "border-amber-400/80 shadow-[0_0_20px_rgba(251,191,36,0.15)]" : "border-border"
-        )}
-      >
-        {/* Capa visual si está oculto (Inactivado) */}
-        {!isActivo && (
-          <div className="absolute inset-0 z-10 bg-background/80 backdrop-blur-[2px] flex items-center justify-center border border-dashed border-red-500/20 rounded-2xl">
-            <span className="bg-red-500 text-white font-semibold text-xs uppercase tracking-wider px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-md">
-              <EyeOff size={13} /> Oculto en Tienda
-            </span>
-          </div>
-        )}
+  className={cn(
+    "group relative isolate transition-all duration-500",
+    isVisible ? "translate-y-0 opacity-100" : "translate-y-12 opacity-0"
+  )}
+  style={{ transitionDelay: `${index * 50}ms` }}
+  onMouseEnter={() => setIsHovered(true)}
+  onMouseLeave={() => setIsHovered(false)}
+>
+  <div
+    className={cn(
+      "relative overflow-hidden rounded-2xl border bg-card transition-all duration-500 hover:border-forest/50 h-full flex flex-col justify-between",
+      isEstrella
+        ? "border-amber-400/80 shadow-[0_0_20px_rgba(251,191,36,0.15)]"
+        : "border-border"
+    )}
+  >
+    {/* Capa visual si está oculto */}
+    {!isActivo && (
+      <div className="absolute inset-0 z-10 bg-background/80 backdrop-blur-[2px] flex items-center justify-center border border-dashed border-red-500/20 rounded-2xl">
+        <span className="bg-red-500 text-white font-semibold text-xs uppercase tracking-wider px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-md">
+          <EyeOff size={13} /> Oculto en Tienda
+        </span>
+      </div>
+    )}
 
-        {/* Badge de Destacado */}
-        {isEstrella && (
-          <div className="absolute top-3 left-3 z-20 bg-amber-400 text-neutral-900 p-1.5 rounded-full shadow-md animate-in zoom-in-50 duration-300">
-            <Star size={12} fill="currentColor" className="text-neutral-950" />
-          </div>
-        )}
+    {/* Badge Destacado */}
+    {isEstrella && (
+      <div className="absolute top-3 left-3 z-20 bg-amber-400 text-neutral-900 p-1.5 rounded-full shadow-md animate-in zoom-in-50 duration-300">
+        <Star size={12} fill="currentColor" className="text-neutral-950" />
+      </div>
+    )}
 
-        {/* Menú flotante de acciones del Administrador */}
-        {isAdmin && (
-          <div className="absolute top-3 right-3 z-30" ref={cardMenuRef}>
+    {/* Menú Administrador */}
+    {isAdmin && (
+      <div className="absolute top-3 right-3 z-20" ref={cardMenuRef}>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsMenuOpen((prev) => !prev);
+          }}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-background/90 border border-border text-cream hover:bg-muted transition shadow-sm"
+        >
+          <MoreVertical size={16} />
+        </button>
+
+        {isMenuOpen && (
+          <div className="absolute right-0 mt-1 w-48 rounded-xl border border-border bg-card p-1 shadow-xl z-30 animate-in fade-in slide-in-from-top-1 duration-200">
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsMenuOpen((prev) => !prev);
-              }}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-background/90 border border-border text-cream hover:bg-muted transition shadow-sm"
+              onClick={toggleEstrella}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-left hover:bg-muted transition text-amber-400 font-medium"
             >
-              <MoreVertical size={16} />
+              <Star size={14} fill={isEstrella ? "currentColor" : "none"} />
+              {isEstrella ? "Quitar Destacado" : "Destacar Producto"}
             </button>
 
-            {isMenuOpen && (
-              <div className="absolute right-0 mt-1 w-48 rounded-xl border border-border bg-card p-1 shadow-xl z-50 animate-in fade-in slide-in-from-top-1 duration-200">
-                <button
-                  type="button"
-                  onClick={toggleEstrella}
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-left hover:bg-muted transition text-amber-400 font-medium"
-                >
-                  <Star size={14} fill={isEstrella ? "currentColor" : "none"} />
-                  {isEstrella ? "Quitar Destacado" : "Destacar Producto"}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleActualizar}
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-left hover:bg-muted transition text-cream"
-                >
-                  <Edit2 size={14} /> Editar campos
-                </button>
-                <button
-                  type="button"
-                  onClick={toggleActivo}
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-left hover:bg-muted transition text-cream"
-                >
-                  {isActivo ? (
-                    <>
-                      <EyeOff size={14} /> Oculto en Tienda
-                    </>
-                  ) : (
-                    <>
-                      <Eye size={14} /> Mostrar en Tienda
-                    </>
-                  )}
-                </button>
-                <hr className="my-1 border-border" />
-                <button
-                  type="button"
-                  onClick={handleEliminar}
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-left hover:bg-red-500/10 text-red-400 font-medium transition"
-                >
-                  <Trash2 size={14} /> Eliminar
-                </button>
-              </div>
-            )}
+            <button
+              type="button"
+              onClick={handleActualizar}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-left hover:bg-muted transition text-cream"
+            >
+              <Edit2 size={14} /> Editar campos
+            </button>
+
+            <button
+              type="button"
+              onClick={toggleActivo}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-left hover:bg-muted transition text-cream"
+            >
+              {isActivo ? (
+                <>
+                  <EyeOff size={14} /> Oculto en Tienda
+                </>
+              ) : (
+                <>
+                  <Eye size={14} /> Mostrar en Tienda
+                </>
+              )}
+            </button>
+
+            <hr className="my-1 border-border" />
+
+            <button
+              type="button"
+              onClick={handleEliminar}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-left hover:bg-red-500/10 text-red-400 font-medium transition"
+            >
+              <Trash2 size={14} /> Eliminar
+            </button>
           </div>
         )}
+      </div>
+    )}
 
-        {/* Sección de la Imagen */}
-        <div className="relative aspect-square overflow-hidden w-full bg-muted/10">
-          <img
-            src={imgSrc}
-            alt={product.nombre_derivado}
-            loading="lazy"
-            decoding="async"
-            onError={() => {
-              if (imgSrc !== "/images/cacao-beans.jpg") {
-                setImgSrc("/images/cacao-beans.jpg");
-              }
-            }}
-            className={cn(
-              "h-full w-full object-cover transition-transform duration-700",
-              isHovered ? "scale-110" : "scale-100",
-            )}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
-          <span className="absolute left-3 bottom-3 rounded-full bg-forest px-3 py-1 text-[11px] uppercase tracking-wider text-cream sm:text-sm">
-            {product.tag || "Portafolio"}
+    {/* Imagen */}
+    <div className="relative aspect-square overflow-hidden w-full bg-muted/10">
+      <img
+        src={imgSrc}
+        alt={product.nombre_derivado}
+        loading="lazy"
+        decoding="async"
+        onError={() => {
+          if (imgSrc !== "/images/cacao-beans.jpg") {
+            setImgSrc("/images/cacao-beans.jpg");
+          }
+        }}
+        className={cn(
+          "h-full w-full object-cover transition-transform duration-700",
+          isHovered ? "scale-110" : "scale-100"
+        )}
+      />
+
+      <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+
+      <span className="absolute left-3 bottom-3 rounded-full bg-forest px-3 py-1 text-[11px] uppercase tracking-wider text-cream sm:text-sm">
+        {product.tag || "Portafolio"}
+      </span>
+    </div>
+
+    {/* Información */}
+    <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between">
+      <div>
+        <div className="mb-2 flex items-center gap-1">
+          <Star size={14} className="fill-amber-400 text-amber-400" />
+          <span className="text-base text-cream/70">
+            {product.rating || "4.8"}
           </span>
         </div>
 
-        {/* Detalles e Información del Producto */}
-        <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between">
-          <div>
-            <div className="mb-2 flex items-center gap-1">
-              <Star size={14} className="fill-amber-400 text-amber-400" />
-              <span className="text-base text-cream/70">
-                {product.rating || "4.8"}
-              </span>
-            </div>
-            <h3 className="mb-2 text-lg font-semibold text-cream transition-colors group-hover:text-forest-light">
-              {product.nombre_derivado}
-            </h3>
-            <p className="mb-4 text-base leading-relaxed text-cream/50 line-clamp-2">
-              {product.descripcion}
-            </p>
-          </div>
-          <div className="flex items-center justify-between gap-3 mt-auto">
-            <span className="text-xl font-bold text-forest-light">
-              {new Intl.NumberFormat("es-CO").format(product.precio ?? 0)}
-            </span>
-            <span className="text-sm uppercase tracking-wider text-cream/40">
-              COP/UNIDAD
-            </span>
-          </div>
-        </div>
+        <h3 className="mb-2 text-lg font-semibold text-cream transition-colors group-hover:text-forest-light">
+          {product.nombre_derivado}
+        </h3>
+
+        <p className="mb-4 text-base leading-relaxed text-cream/50 line-clamp-2">
+          {product.descripcion}
+        </p>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 mt-auto">
+        <span className="text-xl font-bold text-forest-light">
+          {new Intl.NumberFormat("es-CO").format(product.precio ?? 0)}
+        </span>
+
+        <span className="text-sm uppercase tracking-wider text-cream/40">
+          COP/UNIDAD
+        </span>
       </div>
     </div>
+  </div>
+</div>
   );
 }

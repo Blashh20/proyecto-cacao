@@ -24,6 +24,7 @@ export interface PaymentMethodItem {
 
 export interface UsuarioProfile {
   id_usuario: string | null
+  numero_identificacion: string | null
   tipo_identificacion: string | null
   primer_nombre: string | null
   segundo_nombre: string | null
@@ -32,7 +33,7 @@ export interface UsuarioProfile {
   email: string | null
   telefono_celular: string | null
   rol: string | null
-  foto_perfil_url?: string | null
+  foto_url?: string | null
 }
 
 export interface ProfileFormState {
@@ -43,5 +44,5 @@ export interface ProfileFormState {
   tipo_identificacion: string
   numero_identificacion: string
   telefono_celular: string
-  foto_perfil_url: string
+  foto_url: string
 }

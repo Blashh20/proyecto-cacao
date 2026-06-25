@@ -5,6 +5,9 @@
 export interface Project {
   id: number
   id_empresa?: string
+  id_punto_geografico?: string
+  id_finca?: string
+  id_impacto?: string
 
   // Empresa
   name: string
@@ -32,7 +35,7 @@ export interface Project {
   production: string
   variety: string
 
-  image: string
+  image_url: string
 
   catalog: CatalogProduct[]
 

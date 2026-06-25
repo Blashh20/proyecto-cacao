@@ -140,7 +140,7 @@ export function TourismSection() {
 
                     {/* Destacada badge */}
                     {routeItem.destacada && (
-                      <div className="absolute left-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-amber-400 shadow-md animate-in zoom-in-50 duration-300">
+                      <div className="absolute left-3 top-3 z-1 flex h-7 w-7 items-center justify-center rounded-full bg-amber-400 shadow-md animate-in zoom-in-50 duration-300">
                         <Star size={13} fill="currentColor" className="text-neutral-900" />
                       </div>
                     )}

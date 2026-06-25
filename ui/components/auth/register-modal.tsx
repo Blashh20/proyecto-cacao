@@ -138,7 +138,7 @@ export function RegisterModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex justify-center overflow-y-auto px-4 py-8">
+    <div className="fixed inset-0 z-[1300] flex justify-center overflow-y-auto px-4 py-8">
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}

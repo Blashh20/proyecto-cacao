@@ -15,7 +15,9 @@ import {
 
 import {
   createProject,
+  deleteProject as deleteProjectRemote,
   fetchProjects,
+  updateProject as updateProjectRemote,
 } from "@/services/projects-service"
 
 import type {
@@ -35,11 +37,11 @@ interface ProjectsContextType {
   updateProject: (
     id: number,
     projectUpdate: Partial<NewProjectInput>
-  ) => void
+  ) => Promise<void>
 
   deleteProject: (
     id: number
-  ) => void
+  ) => Promise<void>
 
   refreshProjects: () => Promise<void>
 }
@@ -48,82 +50,6 @@ const ProjectsContext =
   createContext<
     ProjectsContextType | undefined
   >(undefined)
-
-const STORAGE_KEY =
-  "empresas:mapa"
-
-function ensureUniqueProjectIds(
-  input: Project[]
-): Project[] {
-  const used = new Set<number>()
-
-  let nextId =
-    input.length === 0
-      ? 1
-      : Math.max(
-          ...input.map((p) => p.id)
-        ) + 1
-
-  return input.map((project) => {
-    if (!used.has(project.id)) {
-      used.add(project.id)
-      return project
-    }
-
-    const reassigned = {
-      ...project,
-      id: nextId++,
-    }
-
-    used.add(reassigned.id)
-
-    return reassigned
-  })
-}
-
-function getStoredProjects(): Project[] {
-  try {
-    const localData =
-      window.localStorage.getItem(
-        STORAGE_KEY
-      )
-
-    if (!localData) return []
-
-    const parsed =
-      JSON.parse(localData)
-
-    return Array.isArray(parsed)
-      ? parsed
-      : []
-  } catch (error) {
-    console.error(
-      "No se pudieron leer proyectos locales:",
-      error
-    )
-    return []
-  }
-}
-
-function mergeProjects(
-  remoteProjects: Project[],
-  storedProjects: Project[]
-): Project[] {
-  const remoteIds =
-    new Set(
-      remoteProjects.map(
-        (project) => project.id
-      )
-    )
-
-  return ensureUniqueProjectIds([
-    ...remoteProjects,
-    ...storedProjects.filter(
-      (project) =>
-        !remoteIds.has(project.id)
-    ),
-  ])
-}
 
 export function ProjectsProvider({
   children,
@@ -140,14 +66,9 @@ export function ProjectsProvider({
     try {
       setIsLoading(true)
       const data = await fetchProjects()
-      setProjects(
-        mergeProjects(
-          data,
-          getStoredProjects()
-        )
-      )
+      setProjects(data)
     } catch {
-      setProjects(getStoredProjects())
+      setProjects([])
     } finally {
       setIsLoading(false)
     }
@@ -163,12 +84,7 @@ export function ProjectsProvider({
             await fetchProjects()
 
           if (isMounted) {
-            setProjects(
-              mergeProjects(
-                data,
-                getStoredProjects()
-              )
-            )
+            setProjects(data)
           }
         } catch (error) {
           console.error(
@@ -177,7 +93,7 @@ export function ProjectsProvider({
           )
 
           if (isMounted) {
-            setProjects(getStoredProjects())
+            setProjects([])
           }
         } finally {
           if (isMounted) {
@@ -190,20 +106,6 @@ export function ProjectsProvider({
     return () => { isMounted = false }
   }, [])
 
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(projects)
-      )
-    } catch (error) {
-      console.error(
-        "No se pudieron guardar datos:",
-        error
-      )
-    }
-  }, [projects])
-
   const value = useMemo(
     () => ({
       projects,
@@ -214,150 +116,59 @@ export function ProjectsProvider({
         project: NewProjectInput
       ) => {
         try {
-          const savedProject =
-            await createProject(
-              project
-            )
-
-          setProjects(
-            (
-              currentProjects
-            ) => [
-              ...currentProjects,
-              savedProject,
-            ]
-          )
+          await createProject(project)
+          await loadProjects()
         } catch (error) {
           console.error(
             "Error saving project:",
             error
           )
+          throw error
         }
       },
 
-      updateProject: (
+      updateProject: async (
         id: number,
         projectUpdate: Partial<NewProjectInput>
       ) => {
-        setProjects(
-          (
-            currentProjects
-          ) =>
-            currentProjects.map(
-              (proj) => {
-                if (
-                  proj.id === id
-                ) {
-                  return {
-                    ...proj,
+        const currentProject =
+          projects.find(
+            (project) =>
+              project.id === id
+          )
 
-                    name:
-                      projectUpdate.name ??
-                      proj.name,
+        if (!currentProject) {
+          throw new Error(
+            "Proyecto no encontrado"
+          )
+        }
 
-                    nit:
-                      projectUpdate.nit ??
-                      proj.nit,
-
-                    status:
-                      projectUpdate.status ??
-                      proj.status,
-
-                    ownerId:
-                      projectUpdate.ownerId ??
-                      proj.ownerId,
-
-                    ownerEmail:
-                      projectUpdate.ownerEmail ??
-                      proj.ownerEmail,
-
-                    location:
-                      projectUpdate.location ??
-                      proj.location,
-
-                    coordinates:
-                      {
-                        lat:
-                          projectUpdate.lat ??
-                          proj
-                            .coordinates
-                            .lat,
-
-                        lng:
-                          projectUpdate.lng ??
-                          proj
-                            .coordinates
-                            .lng,
-                      },
-
-                    localType:
-                      projectUpdate.localType ??
-                      proj.localType,
-
-                    phone:
-                      projectUpdate.phone ??
-                      proj.phone,
-
-                    description:
-                      projectUpdate.description ??
-                      proj.description,
-
-                    image:
-                      projectUpdate.image ??
-                      proj.image,
-
-                    hectares:
-                      projectUpdate.hectares ??
-                      proj.hectares,
-
-                    families:
-                      projectUpdate.families ??
-                      proj.families,
-
-                    yearStarted:
-                      projectUpdate.yearStarted ??
-                      proj.yearStarted,
-
-                    production:
-                      projectUpdate.production ??
-                      proj.production,
-
-                    variety:
-                      projectUpdate.variety ??
-                      proj.variety,
-
-                    catalog:
-                      projectUpdate.catalog ??
-                      proj.catalog,
-
-                    distributionPoints:
-                      projectUpdate.distributionPoints ??
-                      proj.distributionPoints,
-
-                    gallery:
-                      projectUpdate.gallery ??
-                      proj.gallery,
-                  }
-                }
-
-                return proj
-              }
-            )
+        await updateProjectRemote(
+          currentProject,
+          projectUpdate
         )
+        await loadProjects()
       },
 
-      deleteProject: (
+      deleteProject: async (
         id: number
       ) => {
-        setProjects(
-          (
-            currentProjects
-          ) =>
-            currentProjects.filter(
-              (proj) =>
-                proj.id !== id
-            )
+        const currentProject =
+          projects.find(
+            (project) =>
+              project.id === id
+          )
+
+        if (!currentProject) {
+          throw new Error(
+            "Proyecto no encontrado"
+          )
+        }
+
+        await deleteProjectRemote(
+          currentProject
         )
+        await loadProjects()
       },
       refreshProjects: loadProjects,
     }),

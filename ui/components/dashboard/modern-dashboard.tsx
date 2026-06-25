@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import Link from "next/link"
 import {
   Bell,
   CreditCard,
@@ -13,6 +14,7 @@ import {
   Users,
   X,
 } from "lucide-react"
+import { useAuth } from "@/controller/auth-controller"
 import { fetchDashboardData, type DashboardData } from "@/services/dashboard-service"
 
 const navItems = [
@@ -25,6 +27,7 @@ const navItems = [
 ]
 
 export function ModernDashboard() {
+  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [sortBy, setSortBy] = useState<"fecha" | "total">("fecha")
@@ -36,10 +39,29 @@ export function ModernDashboard() {
     let isMounted = true
 
     async function loadDashboardData() {
+      if (!user) {
+        setIsLoading(false)
+        return
+      }
+
       try {
         setIsLoading(true)
         setErrorMessage("")
-        const data = await fetchDashboardData()
+        const data = await fetchDashboardData(user)
+        // Muestra en consola los datos crudos que alimentan las tarjetas y la tabla del dashboard.
+        console.groupCollapsed("[Dashboard] Datos cargados")
+        console.log("Usuario:", user)
+        console.log("Metricas:", {
+          ventas: data.ventas,
+          usuarios: data.usuarios,
+          ingresos: data.ingresos,
+          empresas: data.empresas,
+          productos: data.productos,
+          profileCompletion: data.profileCompletion,
+        })
+        console.table(data.orders)
+        console.log("Payload completo:", data)
+        console.groupEnd()
         if (isMounted) setDashboardData(data)
       } catch (error) {
         if (isMounted) {
@@ -50,12 +72,14 @@ export function ModernDashboard() {
       }
     }
 
-    void loadDashboardData()
+    if (!isAuthLoading) {
+      void loadDashboardData()
+    }
 
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [isAuthLoading, user])
 
   const filteredAndSortedOrders = useMemo(() => {
     const filtered = (dashboardData?.orders ?? []).filter(
@@ -71,6 +95,33 @@ export function ModernDashboard() {
     })
   }, [dashboardData?.orders, query, sortBy])
 
+  if (isAuthLoading) {
+    return (
+      <main className="min-h-screen bg-background px-4 py-16 text-foreground">
+        <div className="mx-auto max-w-4xl rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">
+          Cargando tu sesion...
+        </div>
+      </main>
+    )
+  }
+
+  if (!isAuthenticated || !user) {
+    return (
+      <main className="min-h-screen bg-background px-4 py-16 text-foreground">
+        <div className="mx-auto max-w-4xl rounded-xl border border-border bg-card p-6">
+          <h1 className="text-2xl font-bold">Debes iniciar sesion</h1>
+          <p className="mt-2 text-muted-foreground">Accede con Google o con tu correo para ver tu dashboard personal.</p>
+          <Link href="/" className="mt-6 inline-flex rounded-lg bg-forest px-4 py-2 text-sm font-semibold text-white hover:bg-forest/90">
+            Ir al inicio
+          </Link>
+        </div>
+      </main>
+    )
+  }
+
+  const isAdmin = user.role === "admin"
+  const dashboardTitle = isAdmin ? "Makakaw Admin" : "Mi dashboard"
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="flex">
@@ -80,7 +131,7 @@ export function ModernDashboard() {
             }`}
         >
           <div className="mb-8 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-foreground">Makakaw Admin</h2>
+            <h2 className="text-xl font-bold text-foreground">{dashboardTitle}</h2>
             <button className="rounded-md p-2 text-muted-foreground lg:hidden" onClick={() => setSidebarOpen(false)}>
               <X size={18} />
             </button>
@@ -121,15 +172,34 @@ export function ModernDashboard() {
               <button className="relative rounded-xl border border-border p-2 text-muted-foreground">
                 <Bell size={18} />
               </button>
+              <Link href="/perfil" className="flex min-w-0 items-center gap-2 rounded-xl border border-border px-2 py-1.5">
+                {user.avatarUrl ? (
+                  <img src={user.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-forest text-xs font-bold text-white">
+                    {user.name.slice(0, 1).toUpperCase()}
+                  </span>
+                )}
+                <span className="hidden max-w-36 truncate text-sm font-medium text-foreground sm:block">{user.name}</span>
+              </Link>
             </div>
           </header>
 
           <main className="px-4 py-5 md:px-6">
+            <section className="mb-5 rounded-2xl border border-border bg-card p-4">
+              <p className="text-sm text-muted-foreground">{isAdmin ? "Vista administrativa" : "Vista personal"}</p>
+              <h1 className="mt-1 text-2xl font-bold text-foreground">Hola, {user.name}</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {isAdmin
+                  ? "Estas viendo la actividad general registrada en Supabase."
+                  : "Estos datos pertenecen a tu cuenta y se completan automaticamente con la informacion disponible de tu inicio de sesion."}
+              </p>
+            </section>
             {/* Tarjetas de Métricas (Aquí llamarías a tu estado de Supabase) */}
             <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <MetricCard title="Ventas registradas" value={formatCount(dashboardData?.ventas, isLoading)} detail="Registros reales en tabla ventas" />
-              <MetricCard title="Usuarios" value={formatCount(dashboardData?.usuarios, isLoading)} detail="Cuentas registradas en usuarios" />
-              <MetricCard title="Ingresos" value={formatCurrency(dashboardData?.ingresos, isLoading)} detail="Suma de monto_total en ventas" />
+              <MetricCard title={isAdmin ? "Ventas registradas" : "Mis compras"} value={formatCount(dashboardData?.ventas, isLoading)} detail={isAdmin ? "Registros reales en tabla ventas" : "Ventas asociadas a tu usuario"} />
+              <MetricCard title={isAdmin ? "Usuarios" : "Mi perfil"} value={isAdmin ? formatCount(dashboardData?.usuarios, isLoading) : formatPercent(dashboardData?.profileCompletion, isLoading)} detail={isAdmin ? "Cuentas registradas en usuarios" : "Informacion completada"} />
+              <MetricCard title={isAdmin ? "Ingresos" : "Total comprado"} value={formatCurrency(dashboardData?.ingresos, isLoading)} detail={isAdmin ? "Suma de monto_total en ventas" : "Suma de tus compras registradas"} />
             </section>
 
             {errorMessage ? (
@@ -139,13 +209,13 @@ export function ModernDashboard() {
             ) : null}
 
             <section className="mt-5 grid gap-4 md:grid-cols-2">
-              <MetricCard title="Empresas" value={formatCount(dashboardData?.empresas, isLoading)} detail="Empresas disponibles para el mapa" />
+              <MetricCard title={isAdmin ? "Empresas" : "Mis empresas"} value={formatCount(dashboardData?.empresas, isLoading)} detail={isAdmin ? "Empresas disponibles para el mapa" : "Empresas asociadas a tu usuario"} />
               <MetricCard title="Productos" value={formatCount(dashboardData?.productos, isLoading)} detail="Productos derivados registrados" />
             </section>
 
             <section className="mt-5 rounded-2xl border border-border bg-card p-4">
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <h3 className="text-sm font-semibold text-foreground">Ventas recientes</h3>
+                <h3 className="text-sm font-semibold text-foreground">{isAdmin ? "Ventas recientes" : "Mis ventas recientes"}</h3>
                 <div className="flex items-center gap-2">
                   <label className="text-xs text-muted-foreground">Ordenar por</label>
                   <select
@@ -185,7 +255,7 @@ export function ModernDashboard() {
                     {!isLoading && filteredAndSortedOrders.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="px-3 py-8 text-center text-sm text-muted-foreground">
-                          No hay ventas registradas para mostrar.
+                          No hay ventas asociadas a tu cuenta para mostrar.
                         </td>
                       </tr>
                     ) : null}
@@ -208,6 +278,11 @@ function formatCount(value: number | undefined, isLoading: boolean) {
 function formatCurrency(value: number | undefined, isLoading: boolean) {
   if (isLoading) return "Cargando..."
   return `$${(value ?? 0).toLocaleString("es-CO")} COP`
+}
+
+function formatPercent(value: number | undefined, isLoading: boolean) {
+  if (isLoading) return "Cargando..."
+  return `${value ?? 0}%`
 }
 
 function MetricCard({ title, value, detail }: { title: string; value: string; detail: string }) {
