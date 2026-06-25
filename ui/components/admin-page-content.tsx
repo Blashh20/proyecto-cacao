@@ -2,7 +2,6 @@
 
 import { Shield } from "lucide-react"
 import { useAuth } from "@/controller/auth-controller"
-import { AdminProductsPanel } from "@/ui/components/admin-products-panel"
 import { AdminProjectsPanel } from "@/ui/components/admin-projects-panel"
 import { cn } from "@/ui/utils"
 
@@ -22,7 +21,7 @@ export function AdminPageContent({ className, showUnauthorized = true }: AdminPa
     return (
       <section className="min-h-[70vh] px-4 pb-16 pt-32 sm:px-6">
         <div className="container mx-auto">
-          <div className="mx-auto max-w-2xl rounded-3xl border border-border bg-card p-8 text-center">
+          <div className="mx-auto max-w-2xl rounded-3xl bg-card p-8 text-center">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-forest/10 text-forest-light">
               <Shield size={26} />
             </div>
@@ -39,7 +38,6 @@ export function AdminPageContent({ className, showUnauthorized = true }: AdminPa
   return (
     <div className={cn(className)}>
       <AdminProjectsPanel />
-      <AdminProductsPanel />
     </div>
   )
 }

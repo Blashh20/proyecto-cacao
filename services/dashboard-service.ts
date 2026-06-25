@@ -19,6 +19,13 @@ export type DashboardData = {
   empresas: number
   productos: number
   orders: DashboardOrder[]
+  profileCompletion: number
+}
+
+export type DashboardUserContext = {
+  id: string
+  email: string
+  role: "admin" | "user"
 }
 
 const asString = (value: unknown, fallback = "") =>
@@ -57,6 +64,27 @@ async function selectRows(tableCandidates: readonly string[], select: string, li
   return []
 }
 
+async function selectRowsByColumn(
+  tableCandidates: readonly string[],
+  select: string,
+  column: string,
+  value: string,
+  limit?: number
+) {
+  if (!value) return []
+
+  for (const table of tableCandidates) {
+    let query = supabase.from(table).select(select).eq(column, value)
+    if (limit) query = query.limit(limit)
+    console.log(`Querying ${table} where ${column} = ${value}`)
+
+    const { data, error } = await query
+    if (!error && Array.isArray(data)) return data as unknown as DictionaryRow[]
+  }
+
+  return []
+}
+
 function mapBy(rows: DictionaryRow[], key: string) {
   const result = new Map<string, DictionaryRow>()
 
@@ -68,16 +96,83 @@ function mapBy(rows: DictionaryRow[], key: string) {
   return result
 }
 
-export async function fetchDashboardData(): Promise<DashboardData> {
-  const [ventasRows, empresasRows, usuarios, productos] = await Promise.all([
-    selectRows(
-      DICTIONARY_TABLES.ventas,
-      "id_venta, id_empresa, id_producto, cantidad, monto_total, fecha_creacion"
-    ),
-    selectRows(DICTIONARY_TABLES.empresa, "id_empresa, nombre_comercial"),
-    countRows(DICTIONARY_TABLES.usuario),
+function getProfileCompletion(profile: DictionaryRow | null) {
+  const checks = [
+    profile?.primer_nombre,
+    profile?.primer_apellido,
+    profile?.tipo_identificacion,
+    profile?.numero_identificacion,
+    profile?.id_usuario,
+    profile?.telefono_celular,
+    profile?.foto_url,
+  ]
+  const completed = checks.filter((value) => asString(value).trim().length > 0).length
+  return Math.round((completed / checks.length) * 100)
+}
+
+async function getUserProfile(user: DashboardUserContext) {
+  const fields =
+    "id_usuario, numero_identificacion, primer_nombre, primer_apellido, tipo_identificacion, telefono_celular, foto_url, email"
+
+  const byId = await selectRowsByColumn(DICTIONARY_TABLES.usuario, fields, "id_usuario", user.id, 1)
+  if (byId[0]) return byId[0]
+
+  const byEmail = await selectRowsByColumn(DICTIONARY_TABLES.usuario, fields, "email", user.email.toLowerCase(), 1)
+  return byEmail[0] ?? null
+}
+
+async function getUserCompanies(user: DashboardUserContext) {
+  const byOwner = await selectRowsByColumn(DICTIONARY_TABLES.empresa, "id_empresa, nombre_comercial", "id_usuario", user.id)
+  if (byOwner.length > 0) return byOwner
+
+  return selectRowsByColumn(DICTIONARY_TABLES.empresa, "id_empresa, nombre_comercial", "email", user.email.toLowerCase())
+}
+
+async function getUserVentas(user: DashboardUserContext, empresasRows: DictionaryRow[]) {
+  const byUser = await selectRowsByColumn(
+    DICTIONARY_TABLES.ventas,
+    "id_venta, id_usuario, id_empresa, id_producto, cantidad, monto_total, fecha_creacion",
+    "id_usuario",
+    user.id
+  )
+
+  if (byUser.length > 0) return byUser
+
+  const empresaIds = empresasRows.map((row) => asString(row.id_empresa)).filter(Boolean)
+  if (empresaIds.length === 0) return []
+
+  for (const table of DICTIONARY_TABLES.ventas) {
+    const { data, error } = await supabase
+      .from(table)
+      .select("id_venta, id_usuario, id_empresa, id_producto, cantidad, monto_total, fecha_creacion")
+      .in("id_empresa", empresaIds)
+
+    if (!error && Array.isArray(data)) return data as unknown as DictionaryRow[]
+  }
+
+  return []
+}
+
+export async function fetchDashboardData(user: DashboardUserContext): Promise<DashboardData> {
+  const isAdmin = user.role === "admin"
+  const profilePromise = getUserProfile(user)
+  const empresasPromise = isAdmin
+    ? selectRows(DICTIONARY_TABLES.empresa, "id_empresa, nombre_comercial")
+    : getUserCompanies(user)
+
+  const [empresasRows, usuarios, productos, profile] = await Promise.all([
+    empresasPromise,
+    isAdmin ? countRows(DICTIONARY_TABLES.usuario) : Promise.resolve(1),
     countRows(DICTIONARY_TABLES.productosDerivados),
+    profilePromise,
   ])
+
+  const ventasRows = isAdmin
+    ? await selectRows(
+        DICTIONARY_TABLES.ventas,
+        "id_venta, id_empresa, id_producto, cantidad, monto_total, fecha_creacion"
+      )
+    : await getUserVentas(user, empresasRows)
 
   const empresasById = mapBy(empresasRows, "id_empresa")
   const ingresos = ventasRows.reduce((sum, row) => sum + asNumber(row.monto_total), 0)
@@ -105,5 +200,6 @@ export async function fetchDashboardData(): Promise<DashboardData> {
     empresas: empresasRows.length,
     productos,
     orders,
+    profileCompletion: getProfileCompletion(profile),
   }
 }

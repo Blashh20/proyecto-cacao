@@ -3,6 +3,7 @@
 import NextLink from "next/link"
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react"
 import { ArrowLeft } from "lucide-react"
+import type { RealtimeChannel } from "@supabase/supabase-js"
 
 import { useAuth } from "@/controller/auth-controller"
 import { useProjects } from "@/controller/projects-controller"
@@ -19,24 +20,18 @@ import {
 import { supabase } from "@/services/client"
 import { DICTIONARY_TABLES } from "@/services/dictionary-db"
 import type { PaymentMethodItem, PaymentSettings, PurchaseRow, Tab, UsuarioProfile } from "@/model/profile"
-import {
-  ProfileHero,
-  ProfileFormTab,
-  ProfileLogoLoader,
-  PurchasesTab,
-  SecurityTab,
-  SummaryTab,
-  PaymentsTab,
-  ProjectSubmissionTab,
-} from "@/ui/components/dashboard/profile-dashboard"
+import { ProfileHero } from "@/ui/components/dashboard/profile-hero"
+import { SummaryTab } from "@/ui/components/dashboard/summary-tab"
+import { PurchasesTab } from "@/ui/components/dashboard/purchases-tab"
+import { ProjectSubmissionTab } from "@/ui/components/dashboard/project-submission-tab"
+import { ProfileFormTab } from "@/ui/components/dashboard/profile-form-tab"
+import { SecurityTab } from "@/ui/components/dashboard/security-tab"
 
 const tabs: { id: Tab; label: string }[] = [
   { id: "resumen", label: "Inicio" },
   { id: "compras", label: "Ventas" },
   { id: "proyecto", label: "Proyecto" },
   { id: "perfil", label: "Informacion" },
-  { id: "pagos", label: "Pagos" },
-  { id: "seguridad", label: "Seguridad" },
 ]
 
 type Props = {
@@ -71,7 +66,7 @@ export default function PerfilPage() {
     tipo_identificacion: "",
     numero_identificacion: "",
     telefono_celular: "",
-    foto_perfil_url: "",
+    foto_url: "",
   })
   const [paymentForm, setPaymentForm] = useState<PaymentSettings>({
     metodo_preferido: "",
@@ -97,33 +92,34 @@ export default function PerfilPage() {
   })
 
   useEffect(() => {
-    const subs: any[] = []
+    const subs: RealtimeChannel[] = []
 
     const subscribeToProfile = (profileId: string) => {
       for (const table of DICTIONARY_TABLES.usuario) {
         try {
           const channel = supabase
             .channel(`${table}:id_usuario=eq.${profileId}`)
-            .on("postgres_changes", { event: "UPDATE", schema: "public", table }, (payload: any) => {
-              const row = payload.new ?? payload.record ?? null
+            .on("postgres_changes", { event: "UPDATE", schema: "public", table }, (payload) => {
+              const row = payload.new ?? null
               if (!row) return
-              setProfile((prev) => ({ ...(prev ?? {}), ...(row as any) }))
+              const profileRow = row as Partial<UsuarioProfile>
+              setProfile((prev) => ({ ...(prev ?? {}), ...profileRow } as UsuarioProfile))
               setProfileForm((s) => ({
                 ...s,
-                primer_nombre: (row.primer_nombre as string) ?? s.primer_nombre,
-                segundo_nombre: (row.segundo_nombre as string) ?? s.segundo_nombre,
-                primer_apellido: (row.primer_apellido as string) ?? s.primer_apellido,
-                segundo_apellido: (row.segundo_apellido as string) ?? s.segundo_apellido,
-                tipo_identificacion: (row.tipo_identificacion as string) ?? s.tipo_identificacion,
-                numero_identificacion: (row.id_usuario as string) ?? s.numero_identificacion,
-                telefono_celular: (row.telefono_celular as string) ?? s.telefono_celular,
-                foto_perfil_url: (row.foto_perfil_url as string) ?? s.foto_perfil_url,
+                primer_nombre: profileRow.primer_nombre ?? s.primer_nombre,
+                segundo_nombre: profileRow.segundo_nombre ?? s.segundo_nombre,
+                primer_apellido: profileRow.primer_apellido ?? s.primer_apellido,
+                segundo_apellido: profileRow.segundo_apellido ?? s.segundo_apellido,
+                tipo_identificacion: profileRow.tipo_identificacion ?? s.tipo_identificacion,
+                numero_identificacion: "123",
+                telefono_celular: profileRow.telefono_celular ?? s.telefono_celular,
+                foto_url: profileRow.foto_url ?? s.foto_url,
               }))
             })
             .subscribe()
 
           subs.push(channel)
-        } catch (e) {
+        } catch {
           // ignore subscription errors
         }
       }
@@ -153,9 +149,9 @@ export default function PerfilPage() {
         primer_apellido: loadedProfile?.primer_apellido ?? "",
         segundo_apellido: loadedProfile?.segundo_apellido ?? "",
         tipo_identificacion: loadedProfile?.tipo_identificacion ?? "",
-        numero_identificacion: loadedProfile?.id_usuario ?? "",
+        numero_identificacion: loadedProfile?.numero_identificacion ?? loadedProfile?.id_usuario ?? "",
         telefono_celular: loadedProfile?.telefono_celular ?? "",
-        foto_perfil_url: loadedProfile?.foto_perfil_url ?? "",
+        foto_url: loadedProfile?.foto_url ?? "",
       })
 
       subscribeToProfile(loadedProfile?.id_usuario ?? user.id)
@@ -171,7 +167,7 @@ export default function PerfilPage() {
         } catch {}
       }
     }
-  }, [user?.id])
+  }, [user?.email, user?.id])
 
   const stats = useMemo(() => {
     const totalCompras = purchases.length
@@ -188,7 +184,7 @@ export default function PerfilPage() {
       profileForm.tipo_identificacion,
       profileForm.numero_identificacion,
       profileForm.telefono_celular,
-      profileForm.foto_perfil_url,
+      profileForm.foto_url,
     ]
     const completed = checks.filter((value) => value && value.trim().length > 0).length
     return Math.round((completed / checks.length) * 100)
@@ -200,7 +196,7 @@ export default function PerfilPage() {
   }, [projects, user])
 
   if (isLoading || loadingData) {
-    return <ProfileLogoLoader />
+    return null
   }
 
   if (!isAuthenticated || !user) {
@@ -220,7 +216,7 @@ export default function PerfilPage() {
 
   const fullName =
     [profile?.primer_nombre, profile?.segundo_nombre, profile?.primer_apellido, profile?.segundo_apellido].filter(Boolean).join(" ").trim() || user.name
-  const avatarUrl = profile?.foto_perfil_url?.trim() || "https://placehold.co/160x160/png?text=Perfil"
+  const avatarUrl = profile?.foto_url?.trim() || user.avatarUrl || "https://placehold.co/160x160/png?text=Perfil"
 
   const saveProfile = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -235,8 +231,9 @@ export default function PerfilPage() {
       primer_apellido: profileForm.primer_apellido || null,
       segundo_apellido: profileForm.segundo_apellido || null,
       tipo_identificacion: profileForm.tipo_identificacion || null,
+      numero_identificacion: profileForm.numero_identificacion || null,
       telefono_celular: profileForm.telefono_celular || null,
-      foto_perfil_url: profileForm.foto_perfil_url || null,
+      foto_url: profileForm.foto_url || null,
       email: user.email,
       rol: user.role === "admin" ? "Administrador" : "Cliente",
     }
@@ -251,7 +248,7 @@ export default function PerfilPage() {
 
     const authUpdate = await updateAuthProfile(
       [profileForm.primer_nombre, profileForm.primer_apellido].filter(Boolean).join(" "),
-      profileForm.foto_perfil_url || null
+      profileForm.foto_url || null
     )
 
     if (authUpdate.error) {
@@ -266,10 +263,11 @@ export default function PerfilPage() {
       primer_apellido: payload.primer_apellido,
       segundo_apellido: payload.segundo_apellido,
       tipo_identificacion: payload.tipo_identificacion,
+      numero_identificacion: payload.numero_identificacion,
       email: payload.email,
       telefono_celular: payload.telefono_celular,
       rol: payload.rol,
-      foto_perfil_url: profileForm.foto_perfil_url || null,
+      foto_url: profileForm.foto_url || null,
     })
     setNotice("Perfil actualizado correctamente.")
   }
@@ -374,6 +372,7 @@ export default function PerfilPage() {
           email={profile?.email || user.email}
           role={user.role.toUpperCase()}
           avatarUrl={avatarUrl}
+          foto_url={profile?.foto_url || ""}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           tabs={tabs}
@@ -400,15 +399,6 @@ export default function PerfilPage() {
           <ProjectSubmissionTab form={projectForm} setForm={setProjectForm} projects={myProjects} onSubmit={submitProject} />
         ) : null}
         {activeTab === "perfil" ? <ProfileFormTab form={profileForm} setForm={setProfileForm} onSubmit={saveProfile} /> : null}
-        {activeTab === "pagos" ? (
-          <PaymentsTab
-            form={paymentForm}
-            setForm={setPaymentForm}
-            methods={paymentMethods}
-            setMethods={setPaymentMethods}
-            onSubmit={savePayments}
-          />
-        ) : null}
         {activeTab === "seguridad" ? <SecurityTab form={securityForm} setForm={setSecurityForm} onSubmit={changePassword} /> : null}
       </div>
     </main>

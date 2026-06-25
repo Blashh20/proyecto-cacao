@@ -9,6 +9,14 @@ export interface ProductItem {
   fecha_creacion?: string
   id_galeria_foto?: string | null
   precio?: number | null
+  estrella?: boolean
+  activo?: boolean
+  id_catalogo?: string | null
+  id_empresa?: string | null
+  nombre_empresa?: string | null
+  nit_empresa?: string | null
+  precio_sugerido?: number | null
+  costo_produccion?: number | null
 }
 
 export interface ProductFormState {

@@ -4,8 +4,7 @@ import { useState, type ChangeEvent, type FormEvent } from "react"
 
 import { useAuth } from "@/controller/auth-controller"
 import { initialProductForm, type ProductFormState } from "@/model/products"
-import { supabase } from "@/services/client"
-import { DICTIONARY_TABLES } from "@/services/dictionary-db"
+import { createDerivedProduct } from "@/services/products-service"
 
 export function useAdminProductsPanelController() {
   const { user } = useAuth()
@@ -31,7 +30,7 @@ export function useAdminProductsPanelController() {
       categoria: form.tag.trim() || "Alimento",
     }
 
-    const { error } = await supabase.from(DICTIONARY_TABLES.productosDerivados[0]).insert(payload)
+    const { error } = await createDerivedProduct(payload)
 
     if (error) {
       setErrorMessage(`No se pudo guardar el producto: ${error.message}`)

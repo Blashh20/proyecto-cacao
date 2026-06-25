@@ -111,22 +111,6 @@ export function AboutSection() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent" />
             </div>
-            
-            {/* Floating Card */}
-            <div className="absolute -bottom-5 right-3 max-w-[min(20rem,85%)] rounded-xl border border-border bg-card p-4 shadow-2xl sm:-right-4 sm:p-5 md:right-6">
-              <div className="flex items-center gap-4 mb-3">
-                <div className="w-12 h-12 rounded-full bg-forest/20 flex items-center justify-center">
-                  <TreePine className="w-6 h-6 text-forest-light" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-cream">2,500+</div>
-                  <div className="text-sm text-cream/60">Hectáreas Protegidas</div>
-                </div>
-              </div>
-              <p className="text-sm text-cream/50">
-                Comprometidos con la conservación de la biodiversidad del Cesar.
-              </p>
-            </div>
           </div>
 
           {/* Text Column */}

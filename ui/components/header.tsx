@@ -61,8 +61,7 @@ export function Header() {
       <header
         className={cn(
           "fixed left-0 right-0 top-0 z-50 transition-all duration-500",
-          isScrolled ? "bg-background/95 py-3 shadow-lg backdrop-blur-md" : "bg-transparent py-4 sm:py-6"
-        )}
+          isScrolled ? "bg-black/95 py-3 shadow-lg backdrop-blur-md" : "bg-transparent py-4 sm:py-6"        )}
       >
         <div className="container mx-auto flex items-center justify-between px-4 sm:px-6">
           <Link href="/#inicio" className="group flex min-w-0 items-center gap-3">
@@ -118,7 +117,7 @@ export function Header() {
                 </button>
 
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-48 overflow-hidden rounded-xl border border-border bg-card shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="absolute right-0 top-full mt-2 w-48 overflow-hidden rounded-xl border border-forest-light/20 bg-black/90 backdrop-blur-lg shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="border-b border-border p-3">
                       <p className="text-sm font-medium text-foreground">{user.name}</p>
                       <p className="text-xs text-muted-foreground">{user.email}</p>
@@ -180,8 +179,8 @@ export function Header() {
 
         <div
           className={cn(
-            "absolute left-0 right-0 top-full overflow-hidden bg-background/98 backdrop-blur-lg transition-all duration-300 lg:hidden",
-            isMobileMenuOpen ? "max-h-[550px] border-b border-border" : "max-h-0"
+            "absolute left-0 right-0 top-full overflow-hidden bg-black/90 backdrop-blur-lg transition-all duration-300 lg:hidden",
+            isMobileMenuOpen ? "max-h-[550px] " : "max-h-0"
           )}
         >
           <nav className="container mx-auto flex flex-col gap-4 px-4 py-6 sm:px-6">
@@ -190,7 +189,7 @@ export function Header() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="border-b border-border/30 py-2 text-base uppercase tracking-wider text-cream/80 transition-colors hover:text-forest-light sm:text-lg"
+                className="border-b border-forest-light/40 py-2 text-base uppercase tracking-wider text-cream/80 transition-colors hover:text-forest-light sm:text-lg"
               >
                 {item.label}
               </Link>

@@ -146,6 +146,41 @@
   }
 }
 
+@layer components {
+  .employee-input {
+    @apply h-11 w-full rounded-xl border border-border bg-input px-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-forest focus:ring-2 focus:ring-forest/20;
+  }
+
+  .employee-chip {
+    @apply inline-flex items-center rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground;
+  }
+
+  .employee-chip-green {
+    @apply border-forest/30 bg-forest/10 text-forest-light;
+  }
+
+  .employee-chip-muted {
+    @apply bg-background/30;
+  }
+
+  .employee-icon-button {
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition hover:bg-input hover:text-foreground;
+  }
+
+  .product-icon-button {
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition hover:bg-input hover:text-foreground;
+  }
+
+  .leaflet-container {
+    isolation: isolate;
+  }
+
+  .leaflet-container .leaflet-control-container {
+    position: relative;
+    z-index: 20;
+  }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
