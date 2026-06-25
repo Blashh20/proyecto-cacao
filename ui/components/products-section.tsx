@@ -131,37 +131,136 @@ export function ProductsSection() {
         {/* CONTENEDOR DE LA GRID */}
         <div className="max-h-[78vh] overflow-y-auto overscroll-contain pr-2 sm:max-h-[860px] lg:max-h-[920px]">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
-            {products && products.length > 0 ? (
-              products
-                // 1. Eliminamos duplicados o registros vacíos indeseados filtrando por ID único válido
-                .filter(
+            {(() => {
+              const productosFiltrados =
+                products?.filter(
                   (product) =>
                     product.id_producto &&
-                    !idsEliminadosLocales.includes(product.id_producto),
-                )
-                .map((product, index) => {
-                  // Si el producto está desactivado en la DB y el usuario no es admin, no se muestra nada
-                  if (product.activo === false && !isAdmin) return null;
+                    !idsEliminadosLocales.includes(product.id_producto) &&
+                    (isAdmin || product.activo !== false),
+                ) ?? [];
 
-                  return (
-                    <ProductCard
-                      key={`prod-${product.id_producto}-${index}`} // ✅ Key combinada súper segura para evitar renders estáticos duplicados
-                      product={product}
-                      index={index}
-                      isVisible={isVisible}
-                      isAdmin={isAdmin}
-                      onForceHide={(id) =>
-                        setIdsEliminadosLocales((prev) => [...prev, id])
-                      }
-                      onRefreshList={handleRefresh}
-                    />
-                  );
-                })
-            ) : (
-              <p className="col-span-full text-center text-cream/60 py-10">
-                No hay productos disponibles en este momento.
-              </p>
-            )}
+              if (productosFiltrados.length === 0) {
+                return (
+                  <div className="col-span-full flex flex-col items-center justify-center py-16 gap-4">
+                    <svg
+                      viewBox="0 0 200 200"
+                      className="w-40 h-40 opacity-80"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <ellipse
+                        cx="100"
+                        cy="155"
+                        rx="45"
+                        ry="22"
+                        fill="#5c3d1e"
+                        opacity="0.6"
+                      />
+                      <path
+                        d="M60 110 Q55 155 100 168 Q145 155 140 110 Q130 95 100 93 Q70 95 60 110Z"
+                        fill="#7a4f2a"
+                      />
+                      <path
+                        d="M75 93 Q80 75 100 70 Q120 75 125 93"
+                        fill="none"
+                        stroke="#7a4f2a"
+                        strokeWidth="8"
+                        strokeLinecap="round"
+                      />
+                      <path
+                        d="M70 115 Q100 108 130 115"
+                        fill="none"
+                        stroke="#5c3d1e"
+                        strokeWidth="2"
+                        opacity="0.5"
+                      />
+                      <path
+                        d="M65 128 Q100 120 135 128"
+                        fill="none"
+                        stroke="#5c3d1e"
+                        strokeWidth="2"
+                        opacity="0.5"
+                      />
+                      <ellipse
+                        cx="100"
+                        cy="48"
+                        rx="22"
+                        ry="28"
+                        fill="#8B4513"
+                      />
+                      <path
+                        d="M85 30 Q100 20 115 30"
+                        fill="none"
+                        stroke="#6B3410"
+                        strokeWidth="2.5"
+                      />
+                      <path
+                        d="M88 28 Q90 50 89 66"
+                        fill="none"
+                        stroke="#6B3410"
+                        strokeWidth="1.5"
+                      />
+                      <path
+                        d="M100 25 Q100 48 100 67"
+                        fill="none"
+                        stroke="#6B3410"
+                        strokeWidth="1.5"
+                      />
+                      <path
+                        d="M112 28 Q110 50 111 66"
+                        fill="none"
+                        stroke="#6B3410"
+                        strokeWidth="1.5"
+                      />
+                      <path
+                        d="M100 22 Q108 10 118 14 Q110 18 100 22Z"
+                        fill="#4a7c3f"
+                      />
+                      <ellipse cx="93" cy="44" rx="3" ry="3.5" fill="#3d1a00" />
+                      <ellipse
+                        cx="107"
+                        cy="44"
+                        rx="3"
+                        ry="3.5"
+                        fill="#3d1a00"
+                      />
+                      <path
+                        d="M93 56 Q100 52 107 56"
+                        fill="none"
+                        stroke="#3d1a00"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                      <ellipse
+                        cx="91"
+                        cy="50"
+                        rx="1.5"
+                        ry="2.5"
+                        fill="#6ab0d4"
+                        opacity="0.8"
+                      />
+                    </svg>
+                    <p className="text-cream/50 text-sm uppercase tracking-widest">
+                      No hay productos disponibles
+                    </p>
+                  </div>
+                );
+              }
+
+              return productosFiltrados.map((product, index) => (
+                <ProductCard
+                  key={`prod-${product.id_producto}-${index}`}
+                  product={product}
+                  index={index}
+                  isVisible={isVisible}
+                  isAdmin={isAdmin}
+                  onForceHide={(id) =>
+                    setIdsEliminadosLocales((prev) => [...prev, id])
+                  }
+                  onRefreshList={handleRefresh}
+                />
+              ));
+            })()}
           </div>
         </div>
 
