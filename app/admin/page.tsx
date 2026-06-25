@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Header } from "@/ui/components/header"
 import { Footer } from "@/ui/components/footer"
 import { AdminPageContent } from "@/ui/components/admin-page-content"

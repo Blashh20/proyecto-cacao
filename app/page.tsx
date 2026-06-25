@@ -1,4 +1,4 @@
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { Header } from "@/ui/components/header"
 import { HeroSection } from "@/ui/components/hero-section"
