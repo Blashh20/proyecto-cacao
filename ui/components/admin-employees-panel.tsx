@@ -33,7 +33,7 @@ import {
   type EmployeeCompanyOption,
   type EmployeeInput,
 } from "@/services/employees-service";
-import { uploadImage } from "@/services/upload_image";
+import { uploadImage } from "@/services/storage";
 
 const emptyForm: EmployeeInput = {
   id_empresa: null,

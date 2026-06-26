@@ -63,7 +63,7 @@ import {
   type TourismRouteFormData,
   type TourismRoutePoint,
 } from "@/controller/admin-tourism-controller";
-import { uploadImage } from "@/services/upload_image";
+import { uploadImage } from "@/services/storage";
 
 const AdminMapLeaflet = dynamic(
   () =>

@@ -27,6 +27,7 @@ import { PurchasesTab } from "@/ui/components/dashboard/purchases-tab"
 import { ProjectSubmissionTab } from "@/ui/components/dashboard/project-submission-tab"
 import { ProfileFormTab } from "@/ui/components/dashboard/profile-form-tab"
 import { SecurityTab } from "@/ui/components/dashboard/security-tab"
+import { Header } from "@/ui/components/header"
 
 const tabs: { id: Tab; label: string }[] = [
   { id: "resumen", label: "Inicio" },
@@ -361,13 +362,9 @@ export default function PerfilPage() {
   }
 
   return (
-    <main className="min-h-screen px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
-      <div className="mx-auto max-w-6xl">
-        <Link href="/" className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft size={16} />
-          Volver al inicio
-        </Link>
-
+    <main className="min-h-screen bg-background px-4 py-14 text-foreground sm:py-16 lg:py-20">
+      <Header></Header>
+      <div className="mt-5 mx-auto max-w-6xl">
         <ProfileHero
           fullName={fullName}
           email={profile?.email || user.email}

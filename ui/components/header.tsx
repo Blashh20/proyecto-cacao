@@ -9,6 +9,7 @@ import { useAuth } from "@/controller/auth-controller"
 import { LoginModal } from "@/ui/components/auth/login-modal"
 import { RegisterModal } from "@/ui/components/auth/register-modal"
 import { cn } from "@/ui/utils"
+import { consultarProductos } from "@/services/products-service"
 
 const navItems = [
   { href: "/#inicio", label: "Inicio" },

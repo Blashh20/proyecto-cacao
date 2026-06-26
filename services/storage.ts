@@ -13,3 +13,9 @@ export async function uploadImage(file: File, bucket = "Galeria"): Promise<strin
   }
   return publicUrlData.publicUrl
 }
+
+export async function deleteImage(url: string, bucket = "Galeria"): Promise<void> {
+  const {data , error } = await supabase.storage.from(bucket).remove([url])
+  if (error) throw error
+  console.log("Imagen eliminada:", data)
+}

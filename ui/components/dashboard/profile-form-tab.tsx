@@ -4,7 +4,7 @@ import { FileText, Shield, UserRound } from "lucide-react"
 import Image from "next/image"
 import type { ChangeEvent } from "react"
 
-import { uploadImage } from "@/services/upload_image"
+import { uploadImage } from "@/services/storage"
 import { IDENTIFICATION_TYPES } from "@/ui/components/dashboard/profile-catalogs"
 import { ProfileInput } from "@/ui/components/dashboard/profile-input"
 import { ProfileSelect } from "@/ui/components/dashboard/profile-select"
