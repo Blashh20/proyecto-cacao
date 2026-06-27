@@ -1,10 +1,10 @@
 import type { ProductItem} from "@/model/products"
 import { supabase } from "@/services/client"
 
-export async function consultarProductos(){
+export async function consultar_Productos(){
   const { data, error } = await supabase
-    .from("catalogo_empresa")
-    .select("empresas(nit,nombre_comercial),productos_derivados(id_producto,nombre_derivado,descripcion,categoria,activo,galeria_fotos(id_foto,url_foto)), precio_unitario, costo_produccion")
+    .from("Fk_Productos_Finca")
+    .select("fincas(nit,nombre_comercial),productos_derivados(id_producto,nombre_derivado,descripcion,categoria,activo, precio_unitario, costo_produccion, precio_sugerido, galeria_fotos(id_foto,url_foto))")
 
   if (error) throw new Error(error.message)
   console.log("Productos consultados:", data)
@@ -22,12 +22,13 @@ export async function eliminarProducto(id_producto: string, id_foto: string){
   return {data, error};
 }
 
-export async function actualizarProducto(id_producto: string, producto: Partial<ProductItem>){
+export async function acualizarProducto(id_producto: string, producto: Partial<ProductItem>){
   const updateData = {
     nombre_derivado: producto.nombre_derivado,
     descripcion: producto.descripcion,
     categoria: producto.categoria,
     activo: producto.activo,
+    precio_unitario : producto.precio_unitario,
   };
 
   const { data, error } = await supabase
@@ -39,12 +40,7 @@ export async function actualizarProducto(id_producto: string, producto: Partial<
     .from("galeria_fotos")
     .update({ url_foto: producto.imagen_url })
     .eq("id_foto", producto.id_foto);
-
-  const { data: precioData, error: precioError } = await supabase
-    .from("catalogo_empresa")
-    .update({ precio_unitario: producto.precio_unitario })
-    .eq("id_producto", id_producto);
-  return {data, error, precioData, precioError};
+  return {data, error};
 }
 
 export async function crearProducto(producto: ProductItem, id_finca: string){

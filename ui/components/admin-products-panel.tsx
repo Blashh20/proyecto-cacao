@@ -7,7 +7,7 @@ import { useAuth } from "@/controller/auth-controller"
 import type { ProductItem } from "@/model/products"
 import { supabase } from "@/services/client"
 import {crear_producto_admin} from "@/controller/admin-products-panel-controller"
-import { Consultar_Products } from "@/controller/products-controller"
+import { ConsultarProducts } from "@/controller/products-controller"
 import { ConsultarEmpresas } from "@/controller/empresa-controller"
 
 interface ProductFormState {
@@ -89,7 +89,7 @@ export function AdminProductsPanel() {
 
     try {
       setIsLoadingProducts(true)
-      const productData = await Consultar_Products()
+      const productData = await ConsultarProducts()
       console.log("Productos cargados:", productData)
       setProducts(productData.products ?? [])
     } catch (error) {

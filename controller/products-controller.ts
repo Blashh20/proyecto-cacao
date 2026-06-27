@@ -3,16 +3,16 @@
 import { useCallback, useEffect, useState } from "react";
 
 import type { ProductItem } from "@/model/products";
-import { consultarProductos} from "@/services/products-service";
+import { consultar_Productos} from "@/services/products-service";
 
 // Controla el estado de productos en la UI y delega las consultas a services/products-service.
-export function Consultar_Products() {
+export function ConsultarProducts() {
   const [products, setProducts] = useState<ProductItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const handleRefresh = useCallback(async () => {
     try {
-      const items = await consultarProductos();
+      const items = await consultar_Productos();
       // Map API response shape to ProductItem[] expected by the UI
       const mapped: ProductItem[] = items.map((item) => ({
         nit: item.empresas?.[0]?.nit,

@@ -33,7 +33,7 @@ import {
   type EmployeeCompanyOption,
   type EmployeeInput,
 } from "@/services/employees-service";
-import { uploadImage } from "@/services/storage";
+import { SubirImagen } from "@/controller/imagen-controller";
 
 const emptyForm: EmployeeInput = {
   id_empresa: null,
@@ -225,7 +225,7 @@ export function AdminEmployeesPanel() {
 
     try {
       setIsUploadingResume(true);
-      const publicUrl = await uploadImage(file, "Galeria");
+      const publicUrl = await SubirImagen(file, "empleados");
       setForm((current) => ({ ...current, imagen_hoja_vida: publicUrl }));
       setNotice(
         "Imagen de hoja de vida subida. Guarda el empleado para conservar la URL.",

@@ -12,7 +12,7 @@ import {
   Eye,
 } from "lucide-react";
 
-import { useProducts } from "@/controller/products-controller";
+import { ConsultarProducts } from "@/controller/products-controller";
 import { cn } from "@/ui/utils";
 import { supabase } from "../../services/client"; // ✅ Ruta relativa corregida apuntando a tu cliente real
 import { useAuth } from "@/controller/auth-controller";
@@ -23,7 +23,7 @@ export function ProductsSection() {
   const [isVisible, setIsVisible] = useState(false);
 
   // Traemos los productos y la función de refresco del controlador
-  const { products, handleRefresh } = useProducts();
+  const { products, handleRefresh } = ConsultarProducts();
 
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";

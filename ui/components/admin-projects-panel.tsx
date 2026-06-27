@@ -23,6 +23,7 @@ import {
   Eye,
   EyeOff,
   Factory,
+  Folder,
   Globe2,
   ImagePlus,
   Leaf,
@@ -63,7 +64,7 @@ import {
   type TourismRouteFormData,
   type TourismRoutePoint,
 } from "@/controller/admin-tourism-controller";
-import { uploadImage } from "@/services/storage";
+import { SubirImagen } from "@/controller/imagen-controller";
 
 const AdminMapLeaflet = dynamic(
   () =>
@@ -336,7 +337,7 @@ export function AdminProjectsPanel() {
 
     if (file) {
       try {
-        const urlDeSupabase = await uploadImage(file);
+        const urlDeSupabase = await SubirImagen(file, "empresas");
 
         if (urlDeSupabase) {
           callback(urlDeSupabase);
