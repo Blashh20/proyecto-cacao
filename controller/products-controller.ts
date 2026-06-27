@@ -6,7 +6,7 @@ import type { ProductItem } from "@/model/products";
 import { consultarProductos} from "@/services/products-service";
 
 // Controla el estado de productos en la UI y delega las consultas a services/products-service.
-export function useProducts() {
+export function Consultar_Products() {
   const [products, setProducts] = useState<ProductItem[]>([]);
   const [loading, setLoading] = useState(true);
 

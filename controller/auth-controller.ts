@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
+import { createContext, createElement, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
 import type { Provider, User as SupabaseUser } from "@supabase/supabase-js"
 
 import {
@@ -371,11 +371,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [isLoading, user]
   )
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return createElement(AuthContext.Provider, { value }, children)
 }
 
 export function useAuth() {

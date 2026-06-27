@@ -48,7 +48,7 @@ export async function actualizarProducto(id_producto: string, producto: Partial<
 }
 
 export async function crearProducto(producto: ProductItem, id_finca: string){
-  const { data: productoData, error: productoError } = await supabase
+  const { data: productoData, error } = await supabase
     .from("productos_derivados")
     .insert({
       nombre_derivado: producto.nombre_derivado,
@@ -80,5 +80,5 @@ export async function crearProducto(producto: ProductItem, id_finca: string){
       id_galeria_foto: galeriaData?.id_foto,
     })
     .eq("id_producto", productoData?.id_producto)
-  return {productoData, productoError, fkData, fkError, galeriaData, galeriaError, insertedProductoData, insertedProductoError};
+  return {error};
 }

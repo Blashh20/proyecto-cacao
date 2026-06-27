@@ -6,6 +6,7 @@
 
 import {
   createContext,
+  createElement,
   useContext,
   useEffect,
   useMemo,
@@ -176,12 +177,10 @@ export function ProjectsProvider({
     [isLoading, projects]
   )
 
-  return (
-    <ProjectsContext.Provider
-      value={value}
-    >
-      {children}
-    </ProjectsContext.Provider>
+  return createElement(
+    ProjectsContext.Provider,
+    { value },
+    children
   )
 }
 

@@ -4,7 +4,7 @@ import { FileText, Shield, UserRound } from "lucide-react"
 import Image from "next/image"
 import type { ChangeEvent } from "react"
 
-import { uploadImage } from "@/services/storage"
+import { SubirImagen } from "@/controller/imagen-controller"
 import { IDENTIFICATION_TYPES } from "@/ui/components/dashboard/profile-catalogs"
 import { ProfileInput } from "@/ui/components/dashboard/profile-input"
 import { ProfileSelect } from "@/ui/components/dashboard/profile-select"
@@ -84,7 +84,7 @@ export function ProfileFormTab({
                     const file = e.target.files?.[0]
                     if (!file) return
                     try {
-                      const publicUrl = await uploadImage(file)
+                      const publicUrl = await SubirImagen(file, "usuarios")
                       setForm((s) => ({ ...s, foto_url: publicUrl }))
                       console.log("Imagen subida con exito:", publicUrl)
                     } catch (err) {

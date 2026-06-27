@@ -3,17 +3,19 @@
 import { useState, type ChangeEvent, type FormEvent } from "react"
 
 import { useAuth } from "@/controller/auth-controller"
-import { initialProductForm, type ProductFormState } from "@/model/products"
-import { createDerivedProduct } from "@/services/products-service"
+import { ProductItem} from "@/model/products"
+import { crearProducto } from "@/services/products-service"
 
-export function useAdminProductsPanelController() {
+const initialProductForm = {} as ProductItem
+
+export function crear_producto_admin() {
   const { user } = useAuth()
-  const [form, setForm] = useState<ProductFormState>(initialProductForm)
+  const [form, setForm] = useState<ProductItem>(initialProductForm)
   const [isSaving, setIsSaving] = useState(false)
   const [message, setMessage] = useState("")
   const [errorMessage, setErrorMessage] = useState("")
 
-  const handleChange = (field: keyof ProductFormState) => (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (field: keyof ProductItem) => (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm((current) => ({ ...current, [field]: event.target.value }))
   }
 
@@ -23,14 +25,8 @@ export function useAdminProductsPanelController() {
     setMessage("")
     setErrorMessage("")
 
-    const payload = {
-      id_producto: `prod-${Date.now()}`,
-      nombre_derivado: form.nombre_derivado.trim(),
-      descripcion: form.descripcion.trim() || null,
-      categoria: form.tag.trim() || "Alimento",
-    }
 
-    const { error } = await createDerivedProduct(payload)
+    const {error} = await crearProducto(form, form.nit)
 
     if (error) {
       setErrorMessage(`No se pudo guardar el producto: ${error.message}`)

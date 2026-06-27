@@ -6,13 +6,15 @@ import { Eye, EyeOff, ImagePlus, PackagePlus, Pencil, PlusCircle, RotateCcw, Sav
 import { useAuth } from "@/controller/auth-controller"
 import type { ProductItem } from "@/model/products"
 import { supabase } from "@/services/client"
-import { fetchProductCompanyOptions, fetchProducts, type ProductCompanyOption } from "@/services/products-service"
+import {crear_producto_admin} from "@/controller/admin-products-panel-controller"
+import { Consultar_Products } from "@/controller/products-controller"
+import { ConsultarEmpresas } from "@/controller/empresa-controller"
 
 interface ProductFormState {
   nombre_derivado: string
   descripcion: string
   categoria: string
-  id_empresa: string
+  nit: string
   precio_sugerido: string
   costo_produccion: string
   estrella: boolean
@@ -27,7 +29,7 @@ type ProductEventPayload = {
   estrella?: boolean | null
   activo?: boolean | null
   id_catalogo?: string | null
-  id_empresa?: string | null
+  nit?: string | null
   precio_sugerido?: number | null
   costo_produccion?: number | null
   galeria_fotos?: {
@@ -40,7 +42,7 @@ const initialForm: ProductFormState = {
   nombre_derivado: "",
   descripcion: "",
   categoria: "",
-  id_empresa: "",
+  nit: "",
   precio_sugerido: "",
   costo_produccion: "",
   estrella: false,
@@ -61,23 +63,35 @@ export function AdminProductsPanel() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [existingGaleriaId, setExistingGaleriaId] = useState<string | null>(null)
   const [products, setProducts] = useState<ProductItem[]>([])
-  const [companies, setCompanies] = useState<ProductCompanyOption[]>([])
   const [productQuery, setProductQuery] = useState("")
   const [isLoadingProducts, setIsLoadingProducts] = useState(true)
   const editingProductRef = useRef<ProductEventPayload | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [companies, setCompanies] = useState<{ nit: string; nombre_comercial: string }[]>([])
+
+  useEffect(() => {
+    const loadCompanies = async () => {
+      if (user?.role !== "admin") return
+
+      try {
+        const companyData = await ConsultarEmpresas()
+        setCompanies(companyData ?? [])
+      } catch (error) {
+        console.error("Error cargando empresas:", error)
+      }
+    }
+
+    void loadCompanies()
+  }, [user?.role])
 
   const loadProducts = useCallback(async () => {
     if (user?.role !== "admin") return
 
     try {
       setIsLoadingProducts(true)
-      const [productData, companyData] = await Promise.all([
-        fetchProducts(),
-        fetchProductCompanyOptions(),
-      ])
-      setProducts(productData)
-      setCompanies(companyData)
+      const productData = await Consultar_Products()
+      console.log("Productos cargados:", productData)
+      setProducts(productData.products ?? [])
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "No se pudieron cargar los productos.")
     } finally {
@@ -99,7 +113,7 @@ export function AdminProductsPanel() {
         nombre_derivado: product.nombre_derivado ?? "",
         descripcion: product.descripcion ?? "",
         categoria: product.categoria ?? "",
-        id_empresa: product.id_empresa ?? "",
+        nit: product.nit ?? "",
         precio_sugerido: product.precio_sugerido == null ? "" : String(product.precio_sugerido),
         costo_produccion: product.costo_produccion == null ? "" : String(product.costo_produccion),
         estrella: !!product.estrella,
@@ -192,8 +206,8 @@ export function AdminProductsPanel() {
         product.nombre_derivado,
         product.descripcion,
         product.categoria,
-        product.nombre_empresa,
-        product.nit_empresa,
+        product.nombre_comercial,
+        product.nit,
         product.activo === false ? "inactivo oculto" : "activo visible",
         product.estrella ? "destacado estrella" : "",
       ]
@@ -246,20 +260,20 @@ export function AdminProductsPanel() {
 
   const saveProductCatalog = async (productId: string) => {
     const catalogBasePayload = {
-      id_empresa: form.id_empresa,
+      nit: form.nit,
       id_producto: productId,
       precio_sugerido: toOptionalNumber(form.precio_sugerido),
       costo_produccion: toOptionalNumber(form.costo_produccion),
     }
 
     const fallbackPayload = {
-      id_empresa: form.id_empresa,
+      nit: form.nit,
       id_producto: productId,
       precio_unitario: toOptionalNumber(form.precio_sugerido),
     }
 
     const minimalPayload = {
-      id_empresa: form.id_empresa,
+      nit: form.nit,
       id_producto: productId,
     }
 
@@ -373,7 +387,7 @@ export function AdminProductsPanel() {
         activo: form.activo,
       }
 
-      if (!form.id_empresa) {
+      if (!form.nit) {
         setErrorMessage("Selecciona la empresa responsable del producto.")
         setIsSaving(false)
         return
@@ -425,23 +439,19 @@ export function AdminProductsPanel() {
       categoria: product.categoria,
       estrella: product.estrella,
       activo: product.activo,
-      id_catalogo: product.id_catalogo,
-      id_empresa: product.id_empresa,
-      precio_sugerido: product.precio_sugerido,
       costo_produccion: product.costo_produccion,
     }
     setForm({
       nombre_derivado: product.nombre_derivado,
       descripcion: product.descripcion,
       categoria: product.categoria ?? "",
-      id_empresa: product.id_empresa ?? "",
-      precio_sugerido: product.precio_sugerido == null ? "" : String(product.precio_sugerido),
+      nit: product.nit ?? "",
+      precio_sugerido: product.precio_unitario == null ? "" : String(product.precio_unitario),
       costo_produccion: product.costo_produccion == null ? "" : String(product.costo_produccion),
       estrella: !!product.estrella,
       activo: product.activo !== false,
     })
     setEditingId(product.id_producto)
-    setExistingGaleriaId(product.id_galeria_foto ?? null)
     setImageFile(null)
     setImagePreview(product.imagen_url)
     setMessage("")
@@ -550,14 +560,14 @@ export function AdminProductsPanel() {
 
                 <Field label="Empresa responsable">
                   <select
-                    value={form.id_empresa}
-                    onChange={handleChange("id_empresa")}
+                    value={form.nit}
+                    onChange={handleChange("nit")}
                     required
                     className={inputClassName}
                   >
                     <option value="">Selecciona una empresa</option>
                     {companies.map((company) => (
-                      <option key={company.id_empresa} value={company.id_empresa}>
+                      <option key={company.nit} value={company.nit}>
                         {company.nombre_comercial} - {company.nit}
                       </option>
                     ))}
@@ -744,8 +754,8 @@ export function AdminProductsPanel() {
                       </div>
                     </td>
                     <td className="px-3 py-3">
-                      <p className="text-foreground">{product.nombre_empresa ?? "Sin empresa"}</p>
-                      <p className="text-xs text-muted-foreground">{product.nit_empresa ? `NIT ${product.nit_empresa}` : "Responsable pendiente"}</p>
+                      <p className="text-foreground">{product.nombre_comercial ?? "Sin empresa"}</p>
+                      <p className="text-xs text-muted-foreground">{product.nit ? `NIT ${product.nit}` : "Responsable pendiente"}</p>
                     </td>
                     <td className="px-3 py-3 text-muted-foreground">{product.categoria ?? product.tag}</td>
                     <td className="px-3 py-3">
@@ -764,7 +774,7 @@ export function AdminProductsPanel() {
                       </span>
                     </td>
                     <td className="px-3 py-3 text-muted-foreground">
-                      <p>{product.precio_sugerido ? `$${product.precio_sugerido.toLocaleString("es-CO")}` : "Sin precio"}</p>
+                      <p>{product.precio_unitario ? `$${product.precio_unitario.toLocaleString("es-CO")}` : "Sin precio"}</p>
                       <p className="text-xs">Costo: {product.costo_produccion ? `$${product.costo_produccion.toLocaleString("es-CO")}` : "Sin costo"}</p>
                     </td>
                     <td className="px-3 py-3">

@@ -7,7 +7,7 @@ import { ArrowLeft } from "lucide-react"
 import type { RealtimeChannel } from "@supabase/supabase-js"
 
 import { useAuth } from "@/controller/auth-controller"
-import { useProjects } from "@/controller/projects-controller"
+import { useProjects } from "../../controller/projects-controller"
 import {
   getPaymentSettings,
   getProfile,
@@ -194,7 +194,7 @@ export default function PerfilPage() {
 
   const myProjects = useMemo(() => {
     if (!user) return []
-    return projects.filter((project) => project.ownerId === user.id || project.ownerEmail === user.email)
+    return projects.filter((project: any) => project.ownerId === user.id || project.ownerEmail === user.email)
   }, [projects, user])
 
   if (isLoading || loadingData) {
